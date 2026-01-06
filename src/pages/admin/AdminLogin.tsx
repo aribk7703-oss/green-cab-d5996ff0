@@ -7,11 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Map, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const { login, isAuthenticated } = useAdminAuth();
   const navigate = useNavigate();
@@ -23,6 +30,20 @@ export default function AdminLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
+
+    // Validate inputs
+    const validation = loginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      const errors: { email?: string; password?: string } = {};
+      validation.error.errors.forEach(err => {
+        if (err.path[0] === 'email') errors.email = err.message;
+        if (err.path[0] === 'password') errors.password = err.message;
+      });
+      setFieldErrors(errors);
+      return;
+    }
+
     setIsLoading(true);
 
     const result = await login(email, password);
@@ -30,7 +51,7 @@ export default function AdminLogin() {
     if (result.success) {
       navigate('/admin/dashboard');
     } else {
-      setError(result.error || 'Login failed');
+      setError(result.error || 'Login failed. Please check your credentials.');
     }
 
     setIsLoading(false);
@@ -65,7 +86,11 @@ export default function AdminLogin() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
+                className={fieldErrors.email ? 'border-destructive' : ''}
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-destructive">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -78,7 +103,11 @@ export default function AdminLogin() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                className={fieldErrors.password ? 'border-destructive' : ''}
               />
+              {fieldErrors.password && (
+                <p className="text-xs text-destructive">{fieldErrors.password}</p>
+              )}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -93,9 +122,10 @@ export default function AdminLogin() {
             </Button>
 
             <div className="mt-4 rounded-lg bg-muted p-3 text-sm">
-              <p className="font-medium text-muted-foreground">Demo Credentials:</p>
-              <p className="text-muted-foreground">Email: admin@greencab.com</p>
-              <p className="text-muted-foreground">Password: admin123</p>
+              <p className="font-medium text-muted-foreground">Backend Required</p>
+              <p className="text-muted-foreground text-xs mt-1">
+                Connect your Node.js + Express + MongoDB backend to enable authentication.
+              </p>
             </div>
           </form>
         </CardContent>

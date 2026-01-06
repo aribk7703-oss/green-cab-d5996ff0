@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useTours } from '@/contexts/ToursContext';
+import { Button } from '@/components/ui/button';
+import { dashboardService, bookingsService } from '@/lib/api';
+import type { DashboardStats, Booking } from '@/lib/api';
 import { 
   Map, 
   Calendar, 
@@ -8,81 +11,175 @@ import {
   Users, 
   TrendingUp, 
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  RefreshCw,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// Mock booking data for dashboard
-const mockStats = {
+// Fallback mock data when backend is not connected
+const mockStats: DashboardStats = {
   totalBookings: 156,
-  pendingBookings: 12,
-  totalRevenue: 245680,
-  monthlyGrowth: 12.5,
+  newLeadsToday: 12,
+  activeServices: 8,
+  activeTours: 24,
   recentBookings: [
-    { id: '1', customer: 'John Doe', tour: 'Kashmir Valley Explorer', date: '2024-01-15', amount: 45999, status: 'confirmed' },
-    { id: '2', customer: 'Jane Smith', tour: 'Goa Beach Paradise', date: '2024-01-14', amount: 28999, status: 'pending' },
-    { id: '3', customer: 'Mike Johnson', tour: 'Kerala Backwaters', date: '2024-01-13', amount: 35999, status: 'confirmed' },
-    { id: '4', customer: 'Sarah Williams', tour: 'Rajasthan Heritage', date: '2024-01-12', amount: 52999, status: 'completed' },
-    { id: '5', customer: 'David Brown', tour: 'Andaman Islands', date: '2024-01-11', amount: 62999, status: 'confirmed' },
+    { 
+      _id: '1', 
+      customerName: 'John Doe', 
+      phone: '+91 9876543210',
+      serviceType: 'tour',
+      serviceName: 'Kashmir Valley Explorer', 
+      pickupLocation: 'Aurangabad',
+      date: '2024-01-15', 
+      vehicleType: 'SUV',
+      passengers: 4,
+      status: 'CONFIRMED',
+      source: 'WEBSITE',
+      createdAt: '2024-01-10',
+      updatedAt: '2024-01-10'
+    },
+    { 
+      _id: '2', 
+      customerName: 'Jane Smith', 
+      phone: '+91 9876543211',
+      serviceType: 'tour',
+      serviceName: 'Goa Beach Paradise', 
+      pickupLocation: 'Mumbai',
+      date: '2024-01-14', 
+      vehicleType: 'Sedan',
+      passengers: 2,
+      status: 'NEW',
+      source: 'WHATSAPP',
+      createdAt: '2024-01-09',
+      updatedAt: '2024-01-09'
+    },
+    { 
+      _id: '3', 
+      customerName: 'Mike Johnson', 
+      phone: '+91 9876543212',
+      serviceType: 'tour',
+      serviceName: 'Kerala Backwaters', 
+      pickupLocation: 'Pune',
+      date: '2024-01-13', 
+      vehicleType: 'Tempo',
+      passengers: 8,
+      status: 'CONTACTED',
+      source: 'FORM',
+      createdAt: '2024-01-08',
+      updatedAt: '2024-01-08'
+    },
   ],
 };
 
 const statCards = [
   {
-    title: 'Total Tours',
+    title: 'Active Tours',
     icon: Map,
-    getValue: (tours: number) => tours.toString(),
+    key: 'activeTours' as const,
     change: '+3 this month',
     trend: 'up' as const,
   },
   {
     title: 'Total Bookings',
     icon: Calendar,
-    getValue: () => mockStats.totalBookings.toString(),
+    key: 'totalBookings' as const,
     change: '+18 this week',
     trend: 'up' as const,
   },
   {
-    title: 'Revenue',
+    title: 'Active Services',
     icon: DollarSign,
-    getValue: () => `₹${(mockStats.totalRevenue / 1000).toFixed(0)}K`,
-    change: `+${mockStats.monthlyGrowth}%`,
+    key: 'activeServices' as const,
+    change: 'All running',
     trend: 'up' as const,
   },
   {
-    title: 'Pending Bookings',
+    title: 'New Leads Today',
     icon: Users,
-    getValue: () => mockStats.pendingBookings.toString(),
-    change: '-5 from yesterday',
-    trend: 'down' as const,
+    key: 'newLeadsToday' as const,
+    change: 'Needs attention',
+    trend: 'up' as const,
   },
 ];
 
 function StatusBadge({ status }: { status: string }) {
-  const styles = {
-    confirmed: 'bg-primary/10 text-primary',
-    pending: 'bg-accent/10 text-accent-foreground',
-    completed: 'bg-muted text-muted-foreground',
-    cancelled: 'bg-destructive/10 text-destructive',
+  const styles: Record<string, string> = {
+    NEW: 'bg-accent/20 text-accent-foreground border border-accent/30',
+    CONTACTED: 'bg-info/10 text-info border border-info/30',
+    CONFIRMED: 'bg-primary/10 text-primary border border-primary/30',
+    COMPLETED: 'bg-muted text-muted-foreground border border-border',
+    CANCELLED: 'bg-destructive/10 text-destructive border border-destructive/30',
   };
 
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status as keyof typeof styles] || styles.pending}`}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] || styles.NEW}`}>
+      {status}
     </span>
   );
 }
 
 export default function AdminDashboard() {
-  const { tours } = useTours();
+  const [stats, setStats] = useState<DashboardStats>(mockStats);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchDashboardData = async (showRefreshing = false) => {
+    if (showRefreshing) setIsRefreshing(true);
+    setError(null);
+
+    try {
+      const data = await dashboardService.getStats();
+      setStats(data);
+    } catch (err) {
+      // Fallback to mock data if backend is not available
+      console.warn('Backend not available, using mock data');
+      setStats(mockStats);
+      if (showRefreshing) {
+        setError('Could not connect to backend. Showing demo data.');
+      }
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="font-display text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening with your tours.</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back! Here's what's happening with your business.</p>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => fetchDashboardData(true)}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            <span className="ml-2">Refresh</span>
+          </Button>
         </div>
+
+        {error && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -96,7 +193,11 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {stat.title === 'Total Tours' ? stat.getValue(tours.length) : stat.getValue(0)}
+                  {isLoading ? (
+                    <div className="h-8 w-16 animate-pulse rounded bg-muted" />
+                  ) : (
+                    stats[stat.key]
+                  )}
                 </div>
                 <p className="flex items-center text-xs text-muted-foreground">
                   {stat.trend === 'up' ? (
@@ -125,24 +226,45 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="border-b text-left text-sm text-muted-foreground">
                     <th className="pb-3 font-medium">Customer</th>
-                    <th className="pb-3 font-medium">Tour</th>
+                    <th className="pb-3 font-medium">Service/Tour</th>
+                    <th className="pb-3 font-medium">Pickup</th>
                     <th className="pb-3 font-medium">Date</th>
-                    <th className="pb-3 font-medium">Amount</th>
+                    <th className="pb-3 font-medium">Source</th>
                     <th className="pb-3 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {mockStats.recentBookings.map((booking) => (
-                    <tr key={booking.id} className="border-b last:border-0">
-                      <td className="py-3 text-sm font-medium">{booking.customer}</td>
-                      <td className="py-3 text-sm text-muted-foreground">{booking.tour}</td>
-                      <td className="py-3 text-sm text-muted-foreground">{booking.date}</td>
-                      <td className="py-3 text-sm font-medium">₹{booking.amount.toLocaleString()}</td>
-                      <td className="py-3">
-                        <StatusBadge status={booking.status} />
-                      </td>
-                    </tr>
-                  ))}
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <tr key={i} className="border-b">
+                        {Array.from({ length: 6 }).map((_, j) => (
+                          <td key={j} className="py-3">
+                            <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : (
+                    stats.recentBookings.map((booking) => (
+                      <tr key={booking._id} className="border-b last:border-0">
+                        <td className="py-3">
+                          <div className="text-sm font-medium">{booking.customerName}</div>
+                          <div className="text-xs text-muted-foreground">{booking.phone}</div>
+                        </td>
+                        <td className="py-3 text-sm text-muted-foreground">{booking.serviceName}</td>
+                        <td className="py-3 text-sm text-muted-foreground">{booking.pickupLocation}</td>
+                        <td className="py-3 text-sm text-muted-foreground">{booking.date}</td>
+                        <td className="py-3">
+                          <span className="inline-flex rounded bg-muted px-2 py-0.5 text-xs font-medium">
+                            {booking.source}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          <StatusBadge status={booking.status} />
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

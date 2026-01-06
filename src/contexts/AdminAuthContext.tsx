@@ -1,11 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface AdminUser {
-  id: string;
-  email: string;
-  name: string;
-  role: 'admin' | 'staff';
-}
+import { apiClient, AdminUser } from '@/lib/api/client';
 
 interface AdminAuthContextType {
   user: AdminUser | null;
@@ -17,62 +11,43 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-// Demo admin credentials - In production, this would be handled by a backend
-const DEMO_ADMINS = [
-  { email: 'admin@greencab.com', password: 'admin123', name: 'Admin User', role: 'admin' as const },
-  { email: 'staff@greencab.com', password: 'staff123', name: 'Staff User', role: 'staff' as const },
-];
-
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check for existing session
-    const storedUser = localStorage.getItem('admin_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem('admin_user');
-      }
+    const storedUser = apiClient.getCurrentUser();
+    if (storedUser && apiClient.isAuthenticated()) {
+      setUser(storedUser);
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const adminUser = DEMO_ADMINS.find(
-      admin => admin.email === email && admin.password === password
-    );
-
-    if (adminUser) {
-      const userData: AdminUser = {
-        id: crypto.randomUUID(),
-        email: adminUser.email,
-        name: adminUser.name,
-        role: adminUser.role,
-      };
-      setUser(userData);
-      localStorage.setItem('admin_user', JSON.stringify(userData));
+    try {
+      const response = await apiClient.login(email, password);
+      setUser(response.user);
       return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Login failed';
+      return { success: false, error: message };
     }
-
-    return { success: false, error: 'Invalid email or password' };
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('admin_user');
+  const logout = async () => {
+    try {
+      await apiClient.logout();
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
     <AdminAuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && apiClient.isAuthenticated(),
         isLoading,
         login,
         logout,
