@@ -22,6 +22,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTours from "./pages/admin/AdminTours";
 import TourForm from "./pages/admin/TourForm";
 import AdminBookings from "./pages/admin/AdminBookings";
+import AdminServices from "./pages/admin/AdminServices";
+import AdminFleet from "./pages/admin/AdminFleet";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSettings from "./pages/admin/AdminSettings";
 
@@ -51,10 +53,12 @@ const App = () => (
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/bookings" element={<AdminBookings />} />
               <Route path="/admin/tours" element={<AdminTours />} />
               <Route path="/admin/tours/create" element={<TourForm />} />
               <Route path="/admin/tours/:id/edit" element={<TourForm />} />
-              <Route path="/admin/bookings" element={<AdminBookings />} />
+              <Route path="/admin/services" element={<AdminServices />} />
+              <Route path="/admin/fleet" element={<AdminFleet />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
               

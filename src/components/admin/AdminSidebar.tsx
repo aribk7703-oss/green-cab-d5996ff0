@@ -7,7 +7,9 @@ import {
   Settings, 
   LogOut,
   ChevronLeft,
-  Menu
+  Menu,
+  Briefcase,
+  Car
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -16,8 +18,10 @@ import { useState } from 'react';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
-  { icon: Map, label: 'Tours', href: '/admin/tours' },
   { icon: Calendar, label: 'Bookings', href: '/admin/bookings' },
+  { icon: Map, label: 'Tours', href: '/admin/tours' },
+  { icon: Briefcase, label: 'Services', href: '/admin/services' },
+  { icon: Car, label: 'Fleet', href: '/admin/fleet' },
   { icon: Users, label: 'Users', href: '/admin/users' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
