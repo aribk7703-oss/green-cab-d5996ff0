@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   Menu,
   Briefcase,
-  Car
+  Car,
+  UserCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -23,6 +24,7 @@ const navItems = [
   { icon: Briefcase, label: 'Services', href: '/admin/services' },
   { icon: Car, label: 'Fleet', href: '/admin/fleet' },
   { icon: Users, label: 'Users', href: '/admin/users' },
+  { icon: UserCircle, label: 'Profile', href: '/admin/profile' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
 

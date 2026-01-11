@@ -9,6 +9,7 @@ export { servicesService } from './services/services.service';
 export { toursService } from './services/tours.service';
 export { fleetService } from './services/fleet.service';
 export { uploadService } from './services/upload.service';
+export { profileService } from './services/profile.service';
 
 // Types
 export * from './types';
