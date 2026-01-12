@@ -1,5 +1,39 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Mail, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
+import { MapPin, Phone, Mail, Facebook, Instagram, Twitter, Car } from 'lucide-react';
+
+const quickLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/services', label: 'Services' },
+  { href: '/fleet', label: 'Our Fleet' },
+  { href: '/blog', label: 'Blog' },
+];
+
+const servicesLinks = [
+  { href: '/services/city-taxi', label: 'City Taxi' },
+  { href: '/services/airport-pickup', label: 'Airport Pickup' },
+  { href: '/services/heritage-tours', label: 'Heritage Tours' },
+  { href: '/services/outstation-cab', label: 'Outstation Cab' },
+  { href: '/services/corporate-events', label: 'Corporate Events' },
+  { href: '/services/one-way-cab', label: 'One Way Cab' },
+];
+
+const socialLinks = [
+  { 
+    href: 'https://www.facebook.com/greencabservice', 
+    icon: Facebook, 
+    label: 'Facebook' 
+  },
+  { 
+    href: 'https://www.instagram.com/green_cab_service', 
+    icon: Instagram, 
+    label: 'Instagram' 
+  },
+  { 
+    href: 'https://twitter.com/greencabservice', 
+    icon: Twitter, 
+    label: 'Twitter' 
+  },
+];
 
 export function Footer() {
   return (
@@ -9,32 +43,31 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company info */}
           <div>
-            <div className="flex items-center gap-2 mb-6">
+            <Link to="/" className="flex items-center gap-2 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">G</span>
+                <Car className="w-5 h-5 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="font-display font-bold text-xl leading-tight">Green Cab</span>
+                <span className="font-display font-bold text-xl leading-tight">GreenCab</span>
                 <span className="text-xs text-primary-foreground/60 -mt-0.5">Tours & Travels</span>
               </div>
-            </div>
+            </Link>
             <p className="text-primary-foreground/70 mb-6 leading-relaxed">
-              Your trusted travel partner for exploring India's most beautiful destinations. 
-              Creating unforgettable memories since 2010.
+              Safe, reliable and eco-friendly cab services in Aurangabad with professional drivers.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
-                <Youtube className="w-5 h-5" />
-              </a>
+              {socialLinks.map((social) => (
+                <a 
+                  key={social.label}
+                  href={social.href} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Green Cab Service ${social.label}`}
+                  className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-primary transition-colors"
+                >
+                  <social.icon className="w-5 h-5" />
+                </a>
+              ))}
             </div>
           </div>
 
@@ -42,30 +75,30 @@ export function Footer() {
           <div>
             <h4 className="font-display text-lg font-semibold mb-6">Quick Links</h4>
             <ul className="space-y-3">
-              {['Home', 'Tours', 'Packages', 'Gallery', 'About Us', 'Contact'].map((link) => (
-                <li key={link}>
+              {quickLinks.map((link) => (
+                <li key={link.href}>
                   <Link 
-                    to={`/${link.toLowerCase().replace(' ', '-')}`} 
+                    to={link.href} 
                     className="text-primary-foreground/70 hover:text-primary transition-colors"
                   >
-                    {link}
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Popular tours */}
+          {/* Services */}
           <div>
-            <h4 className="font-display text-lg font-semibold mb-6">Popular Tours</h4>
+            <h4 className="font-display text-lg font-semibold mb-6">Services</h4>
             <ul className="space-y-3">
-              {['Ajanta Ellora', 'Kashmir Valley', 'Rajasthan Heritage', 'Kerala Backwaters', 'Ladakh Adventure', 'Goa Beaches'].map((tour) => (
-                <li key={tour}>
+              {servicesLinks.map((service) => (
+                <li key={service.href}>
                   <Link 
-                    to="/tours" 
+                    to={service.href} 
                     className="text-primary-foreground/70 hover:text-primary transition-colors"
                   >
-                    {tour}
+                    {service.label}
                   </Link>
                 </li>
               ))}
@@ -74,24 +107,29 @@ export function Footer() {
 
           {/* Contact info */}
           <div>
-            <h4 className="font-display text-lg font-semibold mb-6">Contact Us</h4>
+            <h4 className="font-display text-lg font-semibold mb-6">Contact</h4>
             <ul className="space-y-4">
+              <li>
+                <p className="text-primary-foreground/70 text-sm">24/7 Helpline</p>
+                <a 
+                  href="tel:+919970178500" 
+                  className="text-lg font-bold text-primary hover:opacity-80 transition-opacity"
+                >
+                  +91 99701 78500
+                </a>
+              </li>
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                 <span className="text-primary-foreground/70">
-                  123 Travel Hub, Station Road,<br />
-                  Aurangabad, Maharashtra 431001
+                  Aurangabad, Maharashtra, India
                 </span>
               </li>
               <li className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-primary flex-shrink-0" />
-                <a href="tel:+919876543210" className="text-primary-foreground/70 hover:text-primary transition-colors">
-                  +91 98765 43210
-                </a>
-              </li>
-              <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-primary flex-shrink-0" />
-                <a href="mailto:info@greencab.com" className="text-primary-foreground/70 hover:text-primary transition-colors">
+                <a 
+                  href="mailto:info@greencab.com" 
+                  className="text-primary-foreground/70 hover:text-primary transition-colors"
+                >
                   info@greencab.com
                 </a>
               </li>
@@ -104,7 +142,7 @@ export function Footer() {
       <div className="border-t border-primary-foreground/10">
         <div className="container py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-primary-foreground/60 text-sm">
-            © {new Date().getFullYear()} Green Cab Tours & Travels. All rights reserved.
+            © {new Date().getFullYear()} Green Cab Service. All Rights Reserved.
           </p>
           <div className="flex gap-6 text-sm">
             <Link to="/terms" className="text-primary-foreground/60 hover:text-primary transition-colors">
