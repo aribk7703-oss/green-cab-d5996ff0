@@ -1,6 +1,6 @@
 // API Configuration
-// Update this URL to point to your Node.js + Express backend
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Connected to deployed Node.js + Express backend
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://greencab-api.railway.app/api';
 
 export const API_ENDPOINTS = {
   // Auth
