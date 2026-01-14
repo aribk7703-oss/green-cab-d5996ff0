@@ -122,9 +122,9 @@ export default function AdminLogin() {
             </Button>
 
             <div className="mt-4 rounded-lg bg-muted p-3 text-sm">
-              <p className="font-medium text-muted-foreground">Backend Required</p>
+              <p className="font-medium text-muted-foreground">Demo Mode Available</p>
               <p className="text-muted-foreground text-xs mt-1">
-                Connect your Node.js + Express + MongoDB backend to enable authentication.
+                Use <span className="font-mono text-foreground">admin@greencab.com</span> / <span className="font-mono text-foreground">admin123</span> to test the admin panel with mock data.
               </p>
             </div>
           </form>
