@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
-import { dashboardService, bookingsService } from '@/lib/api';
-import type { DashboardStats, Booking } from '@/lib/api';
+import { dashboardService } from '@/lib/api';
+import { mockApiService, USE_MOCK_API } from '@/lib/api/mock';
+import type { DashboardStats } from '@/lib/api';
 import { 
   Map, 
   Calendar, 
@@ -131,12 +132,23 @@ export default function AdminDashboard() {
     setError(null);
 
     try {
-      const data = await dashboardService.getStats();
-      setStats(data);
+      // Use mock API if enabled, otherwise try real API
+      if (USE_MOCK_API) {
+        const data = await mockApiService.dashboard.getStats();
+        setStats(data);
+      } else {
+        const data = await dashboardService.getStats();
+        setStats(data);
+      }
     } catch (err) {
       // Fallback to mock data if backend is not available
       console.warn('Backend not available, using mock data');
-      setStats(mockStats);
+      try {
+        const data = await mockApiService.dashboard.getStats();
+        setStats(data);
+      } catch {
+        setStats(mockStats);
+      }
       if (showRefreshing) {
         setError('Could not connect to backend. Showing demo data.');
       }

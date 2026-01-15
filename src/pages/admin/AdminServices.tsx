@@ -26,7 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { servicesService, uploadService } from '@/lib/api';
+import { servicesService } from '@/lib/api';
+import { mockApiService, USE_MOCK_API } from '@/lib/api/mock';
 import type { Service, ServiceFormData } from '@/lib/api';
 import { 
   Plus, 
@@ -120,10 +121,20 @@ export default function AdminServices() {
   const fetchServices = async () => {
     setIsLoading(true);
     try {
-      const data = await servicesService.getAll();
-      setServices(data);
+      if (USE_MOCK_API) {
+        const data = await mockApiService.services.getAll();
+        setServices(data);
+      } else {
+        const data = await servicesService.getAll();
+        setServices(data);
+      }
     } catch {
-      setServices(mockServices);
+      try {
+        const data = await mockApiService.services.getAll();
+        setServices(data);
+      } catch {
+        setServices(mockServices);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -176,37 +187,21 @@ export default function AdminServices() {
     };
 
     try {
+      const api = USE_MOCK_API ? mockApiService.services : servicesService;
       if (editingService) {
-        await servicesService.update(editingService._id, dataToSubmit);
+        const updated = await api.update(editingService._id, dataToSubmit);
         setServices(prev =>
-          prev.map(s => s._id === editingService._id ? { ...s, ...dataToSubmit, updatedAt: new Date().toISOString() } : s)
+          prev.map(s => s._id === editingService._id ? updated : s)
         );
         toast.success('Service updated successfully');
       } else {
-        const newService = await servicesService.create(dataToSubmit);
+        const newService = await api.create(dataToSubmit);
         setServices(prev => [...prev, newService]);
         toast.success('Service created successfully');
       }
       setIsDialogOpen(false);
     } catch {
-      // Demo mode - update locally
-      if (editingService) {
-        setServices(prev =>
-          prev.map(s => s._id === editingService._id ? { ...s, ...dataToSubmit, updatedAt: new Date().toISOString() } : s)
-        );
-        toast.success('Service updated (demo mode)');
-      } else {
-        const newService: Service = {
-          _id: Date.now().toString(),
-          ...dataToSubmit,
-          slug: formData.name.toLowerCase().replace(/\s+/g, '-'),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setServices(prev => [...prev, newService]);
-        toast.success('Service created (demo mode)');
-      }
-      setIsDialogOpen(false);
+      toast.error('Failed to save service');
     } finally {
       setIsSubmitting(false);
     }
@@ -214,27 +209,25 @@ export default function AdminServices() {
 
   const handleDelete = async (id: string) => {
     try {
-      await servicesService.delete(id);
+      const api = USE_MOCK_API ? mockApiService.services : servicesService;
+      await api.delete(id);
       setServices(prev => prev.filter(s => s._id !== id));
       toast.success('Service deleted successfully');
     } catch {
-      setServices(prev => prev.filter(s => s._id !== id));
-      toast.success('Service deleted (demo mode)');
+      toast.error('Failed to delete service');
     }
   };
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      await servicesService.toggleActive(id, isActive);
+      const api = USE_MOCK_API ? mockApiService.services : servicesService;
+      await api.toggleActive(id, isActive);
       setServices(prev =>
         prev.map(s => s._id === id ? { ...s, isActive } : s)
       );
       toast.success(`Service ${isActive ? 'enabled' : 'disabled'}`);
     } catch {
-      setServices(prev =>
-        prev.map(s => s._id === id ? { ...s, isActive } : s)
-      );
-      toast.success(`Service ${isActive ? 'enabled' : 'disabled'} (demo mode)`);
+      toast.error('Failed to update service');
     }
   };
 
