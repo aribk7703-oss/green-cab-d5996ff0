@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useTours } from '@/contexts/ToursContext';
@@ -12,25 +12,33 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Plus, Trash2, Upload, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tour } from '@/data/tours';
+import { USE_MOCK_API } from '@/lib/api/mock';
 
-const categories = ['Adventure', 'Beach', 'Cultural', 'Nature', 'Wildlife', 'Honeymoon', 'Family', 'Pilgrimage'];
+const categories = ['Adventure', 'Beach', 'Cultural', 'Nature', 'Wildlife', 'Honeymoon', 'Family', 'Pilgrimage', 'Heritage'];
 
 interface TourFormData {
   title: string;
   slug: string;
   location: string;
   description: string;
+  shortDescription: string;
   price: number;
+  originalPrice?: number;
   duration: string;
+  durationDays: number;
   rating: number;
+  reviewCount: number;
   category: string;
   featured: boolean;
   popular: boolean;
   images: string[];
+  image: string;
   highlights: string[];
   itinerary: { day: number; title: string; description: string }[];
   inclusions: string[];
   exclusions: string[];
+  maxGroupSize: number;
+  difficulty: 'Easy' | 'Moderate' | 'Challenging';
 }
 
 const defaultFormData: TourFormData = {
@@ -38,51 +46,91 @@ const defaultFormData: TourFormData = {
   slug: '',
   location: '',
   description: '',
+  shortDescription: '',
   price: 0,
+  originalPrice: undefined,
   duration: '',
+  durationDays: 1,
   rating: 4.5,
+  reviewCount: 0,
   category: 'Adventure',
   featured: false,
   popular: false,
   images: [],
+  image: '',
   highlights: [''],
   itinerary: [{ day: 1, title: '', description: '' }],
   inclusions: [''],
   exclusions: [''],
+  maxGroupSize: 15,
+  difficulty: 'Easy',
 };
+
+// Simulate network delay for mock mode
+const simulateDelay = (ms: number = 500) => new Promise(resolve => setTimeout(resolve, ms));
 
 export default function TourForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { tours, addTour, updateTour, getTourById } = useTours();
+  const { addTour, updateTour, getTourById } = useTours();
   const isEditing = !!id;
 
-  const existingTour = isEditing ? getTourById(id) : undefined;
-
-  const [formData, setFormData] = useState<TourFormData>(() => {
-    if (existingTour) {
-      return {
-        title: existingTour.title,
-        slug: existingTour.slug,
-        location: existingTour.location,
-        description: existingTour.description,
-        price: existingTour.price,
-        duration: existingTour.duration,
-        rating: existingTour.rating,
-        category: existingTour.category,
-        featured: existingTour.featured || false,
-        popular: existingTour.popular || false,
-        images: existingTour.images,
-        highlights: existingTour.highlights || [''],
-        itinerary: existingTour.itinerary || [{ day: 1, title: '', description: '' }],
-        inclusions: existingTour.inclusions || [''],
-        exclusions: existingTour.exclusions || [''],
-      };
-    }
-    return defaultFormData;
-  });
-
+  const [formData, setFormData] = useState<TourFormData>(defaultFormData);
+  const [isLoadingTour, setIsLoadingTour] = useState(isEditing);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch tour data for editing
+  useEffect(() => {
+    const fetchTour = async () => {
+      if (!id) return;
+      
+      setIsLoadingTour(true);
+      try {
+        if (USE_MOCK_API) {
+          // Simulate API delay
+          await simulateDelay(500);
+        }
+        
+        const tour = getTourById(id);
+        if (tour) {
+          setFormData({
+            title: tour.title,
+            slug: tour.slug,
+            location: tour.location,
+            description: tour.description,
+            shortDescription: tour.shortDescription || '',
+            price: tour.price,
+            originalPrice: tour.originalPrice,
+            duration: tour.duration,
+            durationDays: tour.durationDays || 1,
+            rating: tour.rating,
+            reviewCount: tour.reviewCount || 0,
+            category: tour.category,
+            featured: tour.featured || false,
+            popular: tour.popular || false,
+            images: tour.images || [],
+            image: tour.image || '',
+            highlights: tour.highlights?.length ? tour.highlights : [''],
+            itinerary: tour.itinerary?.length ? tour.itinerary : [{ day: 1, title: '', description: '' }],
+            inclusions: tour.inclusions?.length ? tour.inclusions : [''],
+            exclusions: tour.exclusions?.length ? tour.exclusions : [''],
+            maxGroupSize: tour.maxGroupSize || 15,
+            difficulty: tour.difficulty || 'Easy',
+          });
+        } else {
+          toast.error('Tour not found');
+          navigate('/admin/tours');
+        }
+      } catch (error) {
+        console.error('Failed to fetch tour:', error);
+        toast.error('Failed to load tour data');
+      } finally {
+        setIsLoadingTour(false);
+      }
+    };
+
+    fetchTour();
+  }, [id, getTourById, navigate]);
 
   const generateSlug = (title: string) => {
     return title
@@ -181,32 +229,64 @@ export default function TourForm() {
     }
 
     // Clean up empty array items
-    const cleanedData = {
-      ...formData,
+    const cleanedData: Omit<Tour, 'id'> = {
+      title: formData.title,
+      slug: formData.slug || generateSlug(formData.title),
+      location: formData.location,
+      description: formData.description,
+      shortDescription: formData.shortDescription || formData.description.slice(0, 150),
+      price: formData.price,
+      originalPrice: formData.originalPrice,
+      duration: formData.duration,
+      durationDays: formData.durationDays,
+      rating: formData.rating,
+      reviewCount: formData.reviewCount,
+      category: formData.category,
+      featured: formData.featured,
+      popular: formData.popular,
+      image: formData.images[0] || 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop',
+      images: formData.images.length > 0 ? formData.images : [
+        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop'
+      ],
       highlights: formData.highlights.filter(h => h.trim()),
       inclusions: formData.inclusions.filter(i => i.trim()),
       exclusions: formData.exclusions.filter(e => e.trim()),
       itinerary: formData.itinerary.filter(i => i.title.trim()),
-      images: formData.images.length > 0 ? formData.images : [
-        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop'
-      ],
+      maxGroupSize: formData.maxGroupSize,
+      difficulty: formData.difficulty,
     };
 
     try {
-      if (isEditing) {
+      if (USE_MOCK_API) {
+        // Simulate API delay
+        await simulateDelay(600);
+      }
+
+      if (isEditing && id) {
         updateTour(id, cleanedData);
         toast.success('Tour updated successfully');
       } else {
-        addTour(cleanedData as Omit<Tour, 'id'>);
+        addTour(cleanedData);
         toast.success('Tour created successfully');
       }
       navigate('/admin/tours');
-    } catch {
+    } catch (error) {
+      console.error('Failed to save tour:', error);
       toast.error('Something went wrong');
     }
 
     setIsSubmitting(false);
   };
+
+  if (isLoadingTour) {
+    return (
+      <AdminLayout>
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -291,6 +371,17 @@ export default function TourForm() {
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Describe the tour experience..."
                     rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="shortDescription">Short Description</Label>
+                  <Textarea
+                    id="shortDescription"
+                    value={formData.shortDescription}
+                    onChange={(e) => setFormData(prev => ({ ...prev, shortDescription: e.target.value }))}
+                    placeholder="Brief description for cards and previews..."
+                    rows={2}
                   />
                 </div>
               </CardContent>
@@ -444,12 +535,32 @@ export default function TourForm() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="originalPrice">Original Price (₹)</Label>
+                  <Input
+                    id="originalPrice"
+                    type="number"
+                    value={formData.originalPrice || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, originalPrice: e.target.value ? Number(e.target.value) : undefined }))}
+                    placeholder="55999"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="duration">Duration</Label>
                   <Input
                     id="duration"
                     value={formData.duration}
                     onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
                     placeholder="6 Days / 5 Nights"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="durationDays">Duration (Days)</Label>
+                  <Input
+                    id="durationDays"
+                    type="number"
+                    min="1"
+                    value={formData.durationDays}
+                    onChange={(e) => setFormData(prev => ({ ...prev, durationDays: Number(e.target.value) }))}
                   />
                 </div>
                 <div className="space-y-2">
@@ -480,7 +591,7 @@ export default function TourForm() {
                     onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((cat) => (
@@ -490,6 +601,34 @@ export default function TourForm() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Difficulty</Label>
+                  <Select
+                    value={formData.difficulty}
+                    onValueChange={(value: 'Easy' | 'Moderate' | 'Challenging') => setFormData(prev => ({ ...prev, difficulty: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Easy">Easy</SelectItem>
+                      <SelectItem value="Moderate">Moderate</SelectItem>
+                      <SelectItem value="Challenging">Challenging</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="maxGroupSize">Max Group Size</Label>
+                  <Input
+                    id="maxGroupSize"
+                    type="number"
+                    min="1"
+                    value={formData.maxGroupSize}
+                    onChange={(e) => setFormData(prev => ({ ...prev, maxGroupSize: Number(e.target.value) }))}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between">
