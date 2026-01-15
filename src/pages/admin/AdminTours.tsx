@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useTours } from '@/contexts/ToursContext';
@@ -24,23 +24,76 @@ import {
   Eye,
   MapPin,
   Clock,
-  Star
+  Star,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { USE_MOCK_API } from '@/lib/api/mock';
+import { Tour } from '@/data/tours';
+
+// Simulate network delay for mock mode
+const simulateDelay = (ms: number = 500) => new Promise(resolve => setTimeout(resolve, ms));
 
 export default function AdminTours() {
-  const { tours, deleteTour } = useTours();
+  const { tours: contextTours, deleteTour: contextDeleteTour } = useTours();
+  const [tours, setTours] = useState<Tour[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Load tours from context (simulating API fetch)
+  useEffect(() => {
+    const loadTours = async () => {
+      setIsLoading(true);
+      try {
+        if (USE_MOCK_API) {
+          // Simulate API delay
+          await simulateDelay(500);
+        }
+        setTours(contextTours);
+      } catch (error) {
+        console.error('Failed to fetch tours:', error);
+        toast.error('Failed to load tours');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTours();
+  }, [contextTours]);
 
   const filteredTours = tours.filter(tour =>
     tour.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     tour.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDelete = (id: string, title: string) => {
-    deleteTour(id);
-    toast.success(`"${title}" has been deleted`);
+  const handleDelete = async (id: string, title: string) => {
+    setDeletingId(id);
+    try {
+      if (USE_MOCK_API) {
+        // Simulate API delay
+        await simulateDelay(400);
+      }
+      contextDeleteTour(id);
+      setTours(prev => prev.filter(t => t.id !== id));
+      toast.success(`"${title}" has been deleted`);
+    } catch (error) {
+      console.error('Failed to delete tour:', error);
+      toast.error('Failed to delete tour');
+    } finally {
+      setDeletingId(null);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -80,7 +133,7 @@ export default function AdminTours() {
             <Card key={tour.id} className="overflow-hidden shadow-sm transition-shadow hover:shadow-md">
               <div className="relative aspect-video">
                 <img
-                  src={tour.images[0]}
+                  src={tour.images[0] || tour.image}
                   alt={tour.title}
                   className="h-full w-full object-cover"
                 />
@@ -130,8 +183,17 @@ export default function AdminTours() {
                     </Link>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          disabled={deletingId === tour.id}
+                        >
+                          {deletingId === tour.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
