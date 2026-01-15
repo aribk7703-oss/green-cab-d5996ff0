@@ -33,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { fleetService } from '@/lib/api';
+import { mockApiService, USE_MOCK_API } from '@/lib/api/mock';
 import type { Vehicle, VehicleFormData } from '@/lib/api';
 import { 
   Plus, 
@@ -150,10 +151,20 @@ export default function AdminFleet() {
   const fetchFleet = async () => {
     setIsLoading(true);
     try {
-      const data = await fleetService.getAll();
-      setFleet(data);
+      if (USE_MOCK_API) {
+        const data = await mockApiService.fleet.getAll();
+        setFleet(data);
+      } else {
+        const data = await fleetService.getAll();
+        setFleet(data);
+      }
     } catch {
-      setFleet(mockFleet);
+      try {
+        const data = await mockApiService.fleet.getAll();
+        setFleet(data);
+      } catch {
+        setFleet(mockFleet);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -207,36 +218,21 @@ export default function AdminFleet() {
     };
 
     try {
+      const api = USE_MOCK_API ? mockApiService.fleet : fleetService;
       if (editingVehicle) {
-        await fleetService.update(editingVehicle._id, dataToSubmit);
+        const updated = await api.update(editingVehicle._id, dataToSubmit);
         setFleet(prev =>
-          prev.map(v => v._id === editingVehicle._id ? { ...v, ...dataToSubmit, updatedAt: new Date().toISOString() } : v)
+          prev.map(v => v._id === editingVehicle._id ? updated : v)
         );
         toast.success('Vehicle updated successfully');
       } else {
-        const newVehicle = await fleetService.create(dataToSubmit);
+        const newVehicle = await api.create(dataToSubmit);
         setFleet(prev => [...prev, newVehicle]);
         toast.success('Vehicle added successfully');
       }
       setIsDialogOpen(false);
     } catch {
-      if (editingVehicle) {
-        setFleet(prev =>
-          prev.map(v => v._id === editingVehicle._id ? { ...v, ...dataToSubmit, updatedAt: new Date().toISOString() } : v)
-        );
-        toast.success('Vehicle updated (demo mode)');
-      } else {
-        const newVehicle: Vehicle = {
-          _id: Date.now().toString(),
-          ...dataToSubmit,
-          slug: formData.name.toLowerCase().replace(/\s+/g, '-'),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setFleet(prev => [...prev, newVehicle]);
-        toast.success('Vehicle added (demo mode)');
-      }
-      setIsDialogOpen(false);
+      toast.error('Failed to save vehicle');
     } finally {
       setIsSubmitting(false);
     }
@@ -244,27 +240,25 @@ export default function AdminFleet() {
 
   const handleDelete = async (id: string) => {
     try {
-      await fleetService.delete(id);
+      const api = USE_MOCK_API ? mockApiService.fleet : fleetService;
+      await api.delete(id);
       setFleet(prev => prev.filter(v => v._id !== id));
       toast.success('Vehicle deleted successfully');
     } catch {
-      setFleet(prev => prev.filter(v => v._id !== id));
-      toast.success('Vehicle deleted (demo mode)');
+      toast.error('Failed to delete vehicle');
     }
   };
 
   const handleToggleAvailability = async (id: string, isAvailable: boolean) => {
     try {
-      await fleetService.toggleAvailability(id, isAvailable);
+      const api = USE_MOCK_API ? mockApiService.fleet : fleetService;
+      await api.toggleAvailability(id, isAvailable);
       setFleet(prev =>
         prev.map(v => v._id === id ? { ...v, isAvailable } : v)
       );
       toast.success(`Vehicle marked as ${isAvailable ? 'available' : 'unavailable'}`);
     } catch {
-      setFleet(prev =>
-        prev.map(v => v._id === id ? { ...v, isAvailable } : v)
-      );
-      toast.success(`Vehicle marked as ${isAvailable ? 'available' : 'unavailable'} (demo mode)`);
+      toast.error('Failed to update availability');
     }
   };
 

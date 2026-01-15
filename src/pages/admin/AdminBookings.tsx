@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { bookingsService } from '@/lib/api';
+import { mockApiService, USE_MOCK_API } from '@/lib/api/mock';
 import type { Booking, BookingStatus, BookingFilters } from '@/lib/api';
 import { 
   Search, 
@@ -168,23 +169,33 @@ export default function AdminBookings() {
   const fetchBookings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await bookingsService.getAll(filters);
-      setBookings(response.data);
+      if (USE_MOCK_API) {
+        const response = await mockApiService.bookings.getAll(filters);
+        setBookings(response.data);
+      } else {
+        const response = await bookingsService.getAll(filters);
+        setBookings(response.data);
+      }
     } catch {
-      // Filter mock data based on filters
-      let filtered = [...mockBookings];
-      if (filters.status) {
-        filtered = filtered.filter(b => b.status === filters.status);
+      try {
+        const response = await mockApiService.bookings.getAll(filters);
+        setBookings(response.data);
+      } catch {
+        // Filter mock data based on filters
+        let filtered = [...mockBookings];
+        if (filters.status) {
+          filtered = filtered.filter(b => b.status === filters.status);
+        }
+        if (filters.search) {
+          const search = filters.search.toLowerCase();
+          filtered = filtered.filter(b => 
+            b.customerName.toLowerCase().includes(search) ||
+            b.phone.includes(search) ||
+            b.serviceName.toLowerCase().includes(search)
+          );
+        }
+        setBookings(filtered);
       }
-      if (filters.search) {
-        const search = filters.search.toLowerCase();
-        filtered = filtered.filter(b => 
-          b.customerName.toLowerCase().includes(search) ||
-          b.phone.includes(search) ||
-          b.serviceName.toLowerCase().includes(search)
-        );
-      }
-      setBookings(filtered);
     } finally {
       setIsLoading(false);
     }
@@ -197,22 +208,17 @@ export default function AdminBookings() {
   const handleStatusUpdate = async (bookingId: string, newStatus: BookingStatus) => {
     setIsUpdating(true);
     try {
-      await bookingsService.updateStatus(bookingId, newStatus);
+      const api = USE_MOCK_API ? mockApiService.bookings : bookingsService;
+      await api.updateStatus(bookingId, newStatus);
+      setBookings(prev => 
+        prev.map(b => b._id === bookingId ? { ...b, status: newStatus, updatedAt: new Date().toISOString() } : b)
+      );
+      if (selectedBooking?._id === bookingId) {
+        setSelectedBooking(prev => prev ? { ...prev, status: newStatus } : null);
+      }
       toast.success(`Booking status updated to ${newStatus}`);
-      setBookings(prev => 
-        prev.map(b => b._id === bookingId ? { ...b, status: newStatus, updatedAt: new Date().toISOString() } : b)
-      );
-      if (selectedBooking?._id === bookingId) {
-        setSelectedBooking(prev => prev ? { ...prev, status: newStatus } : null);
-      }
     } catch {
-      setBookings(prev => 
-        prev.map(b => b._id === bookingId ? { ...b, status: newStatus, updatedAt: new Date().toISOString() } : b)
-      );
-      if (selectedBooking?._id === bookingId) {
-        setSelectedBooking(prev => prev ? { ...prev, status: newStatus } : null);
-      }
-      toast.success(`Booking status updated to ${newStatus} (demo mode)`);
+      toast.error('Failed to update booking status');
     } finally {
       setIsUpdating(false);
     }
