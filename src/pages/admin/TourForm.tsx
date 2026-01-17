@@ -289,36 +289,43 @@ export default function TourForm() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout fullWidth>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/admin/tours')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="font-display text-3xl font-bold text-foreground">
-              {isEditing ? 'Edit Tour' : 'Create New Tour'}
-            </h1>
-            <p className="text-muted-foreground">
-              {isEditing ? 'Update tour details' : 'Add a new tour package'}
-            </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/admin/tours')}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="font-display text-2xl font-bold text-foreground">
+                {isEditing ? `Edit: ${formData.title || 'Tour'}` : 'Create New Tour'}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {isEditing ? 'Update tour details and settings' : 'Add a new tour package to your catalog'}
+              </p>
+            </div>
           </div>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              isEditing ? 'Update Tour' : 'Create Tour'
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={() => navigate('/admin/tours')}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                isEditing ? 'Save Changes' : 'Create Tour'
+              )}
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">

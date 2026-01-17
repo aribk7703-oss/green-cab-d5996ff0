@@ -10,23 +10,111 @@ import {
   Menu,
   Briefcase,
   Car,
-  UserCircle
+  UserCircle,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
-const navItems = [
+interface NavItem {
+  icon: typeof LayoutDashboard;
+  label: string;
+  href: string;
+  children?: { label: string; href: string }[];
+}
+
+const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
   { icon: Calendar, label: 'Bookings', href: '/admin/bookings' },
-  { icon: Map, label: 'Tours', href: '/admin/tours' },
+  { 
+    icon: Map, 
+    label: 'Tours', 
+    href: '/admin/tours',
+    children: [
+      { label: 'All Tours', href: '/admin/tours' },
+      { label: 'Add New Tour', href: '/admin/tours/create' },
+    ]
+  },
   { icon: Briefcase, label: 'Services', href: '/admin/services' },
   { icon: Car, label: 'Fleet', href: '/admin/fleet' },
   { icon: Users, label: 'Users', href: '/admin/users' },
   { icon: UserCircle, label: 'Profile', href: '/admin/profile' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
+
+interface NavItemWithChildrenProps {
+  item: NavItem;
+  isActive: boolean;
+  collapsed: boolean;
+  pathname: string;
+}
+
+function NavItemWithChildren({ item, isActive, collapsed, pathname }: NavItemWithChildrenProps) {
+  const [isOpen, setIsOpen] = useState(isActive);
+
+  if (!item.children || collapsed) {
+    return (
+      <Link
+        to={item.href}
+        className={cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+          pathname === item.href
+            ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+            : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+        )}
+      >
+        <item.icon className="h-5 w-5 shrink-0" />
+        {!collapsed && <span>{item.label}</span>}
+      </Link>
+    );
+  }
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <button
+          className={cn(
+            'flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+            isActive
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <item.icon className="h-5 w-5 shrink-0" />
+            <span>{item.label}</span>
+          </div>
+          <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border pl-3">
+          {item.children.map(child => (
+            <Link
+              key={child.href}
+              to={child.href}
+              className={cn(
+                'block rounded-lg px-3 py-2 text-sm transition-colors',
+                pathname === child.href
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              )}
+            >
+              {child.label}
+            </Link>
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 
 export function AdminSidebar() {
   const location = useLocation();
@@ -64,23 +152,19 @@ export function AdminSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {navItems.map(item => {
-            const isActive = location.pathname === item.href;
+            const isActive = location.pathname === item.href || 
+              (item.children?.some(child => location.pathname === child.href));
+            
             return (
-              <Link
+              <NavItemWithChildren
                 key={item.href}
-                to={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
+                item={item}
+                isActive={!!isActive}
+                collapsed={collapsed}
+                pathname={location.pathname}
+              />
             );
           })}
         </nav>
