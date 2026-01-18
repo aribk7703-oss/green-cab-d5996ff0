@@ -12,7 +12,8 @@ import {
   Car,
   UserCircle,
   ChevronDown,
-  MapPin
+  MapPin,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -44,6 +45,7 @@ const navItems: NavItem[] = [
     ]
   },
   { icon: MapPin, label: 'Locations', href: '/admin/locations' },
+  { icon: FileText, label: 'Pages', href: '/admin/pages' },
   { icon: Briefcase, label: 'Services', href: '/admin/services' },
   { icon: Car, label: 'Fleet', href: '/admin/fleet' },
   { icon: Users, label: 'Users', href: '/admin/users' },

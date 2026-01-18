@@ -2,6 +2,9 @@
 // Connected to deployed Node.js + Express backend
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://greencab-api.railway.app/api';
 
+// Toggle this to use mock API for development/demo purposes
+export const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true' || true;
+
 export const API_ENDPOINTS = {
   // Auth
   AUTH_LOGIN: '/auth/login',
