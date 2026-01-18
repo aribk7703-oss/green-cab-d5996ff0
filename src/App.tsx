@@ -16,6 +16,7 @@ import Fleet from "./pages/Fleet";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
+import DynamicPage from "./pages/DynamicPage";
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -54,6 +55,12 @@ const App = () => (
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/packages" element={<Tours />} />
+              
+              {/* Static Pages from CMS */}
+              <Route path="/terms" element={<DynamicPage slug="terms" />} />
+              <Route path="/privacy" element={<DynamicPage slug="privacy" />} />
+              <Route path="/faq" element={<DynamicPage slug="faq" />} />
+              <Route path="/page/:slug" element={<DynamicPage />} />
               
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
