@@ -17,6 +17,8 @@ import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
 import DynamicPage from "./pages/DynamicPage";
+import Services from "./pages/Services";
+import ServiceDetail from "./pages/ServiceDetail";
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -55,6 +57,8 @@ const App = () => (
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/packages" element={<Tours />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/services/:slug" element={<ServiceDetail />} />
               
               {/* Static Pages from CMS */}
               <Route path="/terms" element={<DynamicPage slug="terms" />} />
