@@ -19,6 +19,8 @@ import NotFound from "./pages/NotFound";
 import DynamicPage from "./pages/DynamicPage";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
+import Destinations from "./pages/Destinations";
+import DestinationDetail from "./pages/DestinationDetail";
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -59,6 +61,8 @@ const App = () => (
               <Route path="/packages" element={<Tours />} />
               <Route path="/services" element={<Services />} />
               <Route path="/services/:slug" element={<ServiceDetail />} />
+              <Route path="/destinations" element={<Destinations />} />
+              <Route path="/destinations/:slug" element={<DestinationDetail />} />
               
               {/* Static Pages from CMS */}
               <Route path="/terms" element={<DynamicPage slug="terms" />} />
