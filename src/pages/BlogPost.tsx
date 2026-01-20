@@ -1,19 +1,76 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { getBlogPostBySlug, getRelatedPosts } from '@/data/blogPosts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, User, ArrowLeft, Share2, Facebook, Twitter } from 'lucide-react';
+import { Calendar, Clock, User, ArrowLeft, Share2, Facebook, Twitter, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { USE_MOCK_API } from '@/lib/api/mock';
+import { mockBlogService } from '@/lib/api/mock/mockBlogService';
+import { blogService } from '@/lib/api/services/blog.service';
+import type { BlogPost as BlogPostType } from '@/lib/api/types';
+
+// Calculate read time based on content length
+const calculateReadTime = (content: string): string => {
+  const wordsPerMinute = 200;
+  const wordCount = content.split(/\s+/).length;
+  const minutes = Math.ceil(wordCount / wordsPerMinute);
+  return `${minutes} min read`;
+};
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
-  const post = slug ? getBlogPostBySlug(slug) : undefined;
-  const relatedPosts = slug ? getRelatedPosts(slug, 3) : [];
+  const [post, setPost] = useState<BlogPostType | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPostType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!post) {
+  useEffect(() => {
+    const loadPost = async () => {
+      if (!slug) {
+        setNotFound(true);
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const api = USE_MOCK_API ? mockBlogService : blogService;
+        const postData = await api.getBySlug(slug);
+        
+        if (!postData) {
+          setNotFound(true);
+          return;
+        }
+        
+        setPost(postData);
+        
+        // Load related posts
+        const related = await api.getRelated(slug, 3);
+        setRelatedPosts(related);
+      } catch (error) {
+        console.error('Failed to load blog post:', error);
+        setNotFound(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadPost();
+  }, [slug]);
+
+  if (notFound) {
     return <Navigate to="/blog" replace />;
+  }
+
+  if (isLoading || !post) {
+    return (
+      <MainLayout>
+        <div className="flex h-96 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
   }
 
   const shareUrl = window.location.href;
@@ -24,7 +81,7 @@ export default function BlogPost() {
       {/* Hero Image */}
       <section className="relative h-[40vh] md:h-[50vh] overflow-hidden">
         <img
-          src={post.image}
+          src={post.coverImage}
           alt={post.title}
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -54,15 +111,15 @@ export default function BlogPost() {
               <div className="flex flex-wrap items-center gap-4 text-muted-foreground mb-6">
                 <span className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  {post.author}
+                  {post.author.name}
                 </span>
                 <span className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  {format(new Date(post.publishedAt), 'MMMM dd, yyyy')}
+                  {post.publishedAt && format(new Date(post.publishedAt), 'MMMM dd, yyyy')}
                 </span>
                 <span className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  {post.readTime}
+                  {calculateReadTime(post.content)}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -174,11 +231,11 @@ export default function BlogPost() {
             <h2 className="text-2xl font-bold text-foreground mb-8">Related Articles</h2>
             <div className="grid md:grid-cols-3 gap-6">
               {relatedPosts.map(relatedPost => (
-                <Link key={relatedPost.id} to={`/blog/${relatedPost.slug}`}>
+                <Link key={relatedPost._id} to={`/blog/${relatedPost.slug}`}>
                   <Card className="h-full overflow-hidden group hover:shadow-lg transition-all duration-300">
                     <div className="relative h-40 overflow-hidden">
                       <img
-                        src={relatedPost.image}
+                        src={relatedPost.coverImage}
                         alt={relatedPost.title}
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
@@ -191,7 +248,7 @@ export default function BlogPost() {
                         {relatedPost.title}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {relatedPost.readTime}
+                        {calculateReadTime(relatedPost.content)}
                       </p>
                     </CardContent>
                   </Card>
