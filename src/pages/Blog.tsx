@@ -1,21 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { blogPosts } from '@/data/blogPosts';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Calendar, Clock, User, ArrowRight } from 'lucide-react';
+import { Search, Calendar, Clock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { USE_MOCK_API } from '@/lib/api/mock';
+import { mockBlogService } from '@/lib/api/mock/mockBlogService';
+import { blogService } from '@/lib/api/services/blog.service';
+import type { BlogPost } from '@/lib/api/types';
 
-const categories = ['All', 'Heritage', 'Destinations', 'Pilgrimage'];
+const categories = ['All', 'Heritage', 'Destinations', 'Pilgrimage', 'Travel Tips', 'Culture'];
+
+// Calculate read time based on content length
+const calculateReadTime = (content: string): string => {
+  const wordsPerMinute = 200;
+  const wordCount = content.split(/\s+/).length;
+  const minutes = Math.ceil(wordCount / wordsPerMinute);
+  return `${minutes} min read`;
+};
 
 export default function Blog() {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const filteredPosts = blogPosts.filter(post => {
+  useEffect(() => {
+    const loadPosts = async () => {
+      setIsLoading(true);
+      try {
+        const api = USE_MOCK_API ? mockBlogService : blogService;
+        const data = await api.getPublished();
+        setPosts(data);
+      } catch (error) {
+        console.error('Failed to load blog posts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadPosts();
+  }, []);
+
+  const filteredPosts = posts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -25,7 +54,7 @@ export default function Blog() {
     return matchesSearch && matchesCategory;
   });
 
-  const featuredPost = blogPosts[0];
+  const featuredPost = posts[0];
 
   return (
     <MainLayout>
@@ -74,53 +103,59 @@ export default function Blog() {
         </div>
       </section>
 
-      {/* Featured Post */}
-      {selectedCategory === 'All' && !searchQuery && (
-        <section className="py-12">
-          <div className="container mx-auto px-4">
-            <Link to={`/blog/${featuredPost.slug}`}>
-              <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div className="grid md:grid-cols-2 gap-0">
-                  <div className="relative h-64 md:h-auto overflow-hidden">
-                    <img
-                      src={featuredPost.image}
-                      alt={featuredPost.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <Badge className="absolute top-4 left-4 bg-primary">Featured</Badge>
-                  </div>
-                  <CardContent className="p-6 md:p-10 flex flex-col justify-center">
-                    <Badge variant="outline" className="w-fit mb-4">{featuredPost.category}</Badge>
-                    <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors">
-                      {featuredPost.title}
-                    </h2>
-                    <p className="text-muted-foreground mb-6">
-                      {featuredPost.excerpt}
-                    </p>
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-6">
-                      <span className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        {featuredPost.author}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {format(new Date(featuredPost.publishedAt), 'MMM dd, yyyy')}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {featuredPost.readTime}
-                      </span>
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <>
+          {/* Featured Post */}
+          {selectedCategory === 'All' && !searchQuery && featuredPost && (
+            <section className="py-12">
+              <div className="container mx-auto px-4">
+                <Link to={`/blog/${featuredPost.slug}`}>
+                  <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <div className="grid md:grid-cols-2 gap-0">
+                      <div className="relative h-64 md:h-auto overflow-hidden">
+                        <img
+                          src={featuredPost.coverImage}
+                          alt={featuredPost.title}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <Badge className="absolute top-4 left-4 bg-primary">Featured</Badge>
+                      </div>
+                      <CardContent className="p-6 md:p-10 flex flex-col justify-center">
+                        <Badge variant="outline" className="w-fit mb-4">{featuredPost.category}</Badge>
+                        <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors">
+                          {featuredPost.title}
+                        </h2>
+                        <p className="text-muted-foreground mb-6">
+                          {featuredPost.excerpt}
+                        </p>
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-6">
+                          <span className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            {featuredPost.author.name}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {featuredPost.publishedAt && format(new Date(featuredPost.publishedAt), 'MMM dd, yyyy')}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {calculateReadTime(featuredPost.content)}
+                          </span>
+                        </div>
+                        <span className="inline-flex items-center gap-2 text-primary font-medium group-hover:gap-3 transition-all">
+                          Read Article <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </CardContent>
                     </div>
-                    <span className="inline-flex items-center gap-2 text-primary font-medium group-hover:gap-3 transition-all">
-                      Read Article <ArrowRight className="h-4 w-4" />
-                    </span>
-                  </CardContent>
-                </div>
-              </Card>
-            </Link>
-          </div>
-        </section>
-      )}
+                  </Card>
+                </Link>
+              </div>
+            </section>
+          )}
 
       {/* Blog Posts Grid */}
       <section className="py-12">
@@ -139,13 +174,13 @@ export default function Blog() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPosts
-                .filter(post => selectedCategory !== 'All' || searchQuery || post.id !== featuredPost.id)
+                .filter(post => selectedCategory !== 'All' || searchQuery || post._id !== featuredPost?._id)
                 .map(post => (
-                  <Link key={post.id} to={`/blog/${post.slug}`}>
+                  <Link key={post._id} to={`/blog/${post.slug}`}>
                     <Card className="h-full overflow-hidden group hover:shadow-lg transition-all duration-300">
                       <div className="relative h-48 overflow-hidden">
                         <img
-                          src={post.image}
+                          src={post.coverImage}
                           alt={post.title}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
@@ -172,11 +207,11 @@ export default function Blog() {
                         <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(post.publishedAt), 'MMM dd, yyyy')}
+                            {post.publishedAt && format(new Date(post.publishedAt), 'MMM dd, yyyy')}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {post.readTime}
+                            {calculateReadTime(post.content)}
                           </span>
                         </div>
                       </CardFooter>
@@ -187,6 +222,8 @@ export default function Blog() {
           )}
         </div>
       </section>
+        </>
+      )}
 
       {/* Newsletter CTA */}
       <section className="py-16 bg-primary/5">
