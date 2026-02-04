@@ -35,6 +35,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import { 
   Plus, 
   Search, 
@@ -488,17 +489,13 @@ export default function AdminBlog() {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="coverImage">Cover Image URL</Label>
-                  <Input
-                    id="coverImage"
-                    value={formData.coverImage}
-                    onChange={(e) => setFormData(prev => ({ ...prev, coverImage: e.target.value }))}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
               </div>
+              
+              <ImageUpload
+                value={formData.coverImage}
+                onChange={(url) => setFormData(prev => ({ ...prev, coverImage: url }))}
+                label="Cover Image"
+              />
               
               <div className="space-y-2">
                 <Label htmlFor="excerpt">Excerpt</Label>
