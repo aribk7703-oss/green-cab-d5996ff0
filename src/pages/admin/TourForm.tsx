@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Plus, Trash2, Upload, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Loader2, X } from 'lucide-react';
+import { MultiImageUpload } from '@/components/admin/MultiImageUpload';
 import { toast } from 'sonner';
 import { Tour } from '@/data/tours';
 import { USE_MOCK_API } from '@/lib/api/mock';
@@ -399,38 +400,13 @@ export default function TourForm() {
               <CardHeader>
                 <CardTitle>Images</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                  {formData.images.map((image, index) => (
-                    <div key={index} className="group relative aspect-video overflow-hidden rounded-lg border">
-                      <img
-                        src={image}
-                        alt={`Tour ${index + 1}`}
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                  <label className="flex aspect-video cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 transition-colors hover:border-primary/50 hover:bg-muted/50">
-                    <div className="text-center">
-                      <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
-                      <span className="mt-1 block text-xs text-muted-foreground">Upload</span>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+              <CardContent>
+                <MultiImageUpload
+                  value={formData.images}
+                  onChange={(images) => setFormData(prev => ({ ...prev, images }))}
+                  label=""
+                  maxImages={8}
+                />
               </CardContent>
             </Card>
 

@@ -33,6 +33,7 @@ import AdminFleet from "./pages/admin/AdminFleet";
 import AdminLocations from "./pages/admin/AdminLocations";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminPages from "./pages/admin/AdminPages";
+import AdminMedia from "./pages/admin/AdminMedia";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/admin/locations" element={<AdminLocations />} />
               <Route path="/admin/blog" element={<AdminBlog />} />
               <Route path="/admin/pages" element={<AdminPages />} />
+              <Route path="/admin/media" element={<AdminMedia />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/profile" element={<AdminProfile />} />
               <Route path="/admin/settings" element={<AdminSettings />} />

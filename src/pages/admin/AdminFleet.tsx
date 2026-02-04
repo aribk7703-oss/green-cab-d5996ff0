@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -480,15 +481,11 @@ export default function AdminFleet() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="image">Image URL</Label>
-                <Input
-                  id="image"
-                  value={formData.image}
-                  onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                  placeholder="https://example.com/vehicle.jpg"
-                />
-              </div>
+              <ImageUpload
+                value={formData.image}
+                onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                label="Vehicle Image"
+              />
 
               <div className="space-y-2">
                 <Label>Features (comma separated)</Label>
