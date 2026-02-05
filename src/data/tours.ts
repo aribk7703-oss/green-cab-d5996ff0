@@ -16,7 +16,7 @@ export interface Tour {
   highlights: string[];
   inclusions: string[];
   exclusions: string[];
-  itinerary: { day: number; title: string; description: string }[];
+  itinerary: { day: number; title: string; description: string; activities?: string[] }[];
   category: string;
   featured: boolean;
   popular: boolean;

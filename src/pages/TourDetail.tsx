@@ -8,13 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { mockApiService, USE_MOCK_API } from '@/lib/api/mock/mockApiService';
-import { toursService } from '@/lib/api/services/tours.service';
-import type { Tour } from '@/lib/api/types';
+import { useTours } from '@/contexts/ToursContext';
+import type { Tour } from '@/data/tours';
 
 const TourDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { tours: allTours } = useTours();
   
   const [tour, setTour] = useState<Tour | null>(null);
   const [relatedTours, setRelatedTours] = useState<Tour[]>([]);
@@ -23,34 +23,37 @@ const TourDetail = () => {
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
-    const fetchTour = async () => {
+    const loadTour = () => {
       if (!slug) return;
       
-      try {
-        setLoading(true);
-        const api = USE_MOCK_API ? mockApiService.tours : toursService;
-        const allTours = await api.getAll();
-        
-        // Find the tour by slug
-        const foundTour = allTours.find(t => t.slug === slug && t.isActive);
-        setTour(foundTour || null);
-        
-        // Get related tours (same category, different tour)
-        if (foundTour) {
-          const related = allTours
-            .filter(t => t.isActive && t.slug !== slug)
-            .slice(0, 3);
-          setRelatedTours(related);
+      setLoading(true);
+      
+      // Find the tour by slug
+      const foundTour = allTours.find(t => t.slug === slug);
+      setTour(foundTour || null);
+      
+      // Get related tours (same category, different tour)
+      if (foundTour) {
+        const related = allTours
+          .filter(t => t.slug !== slug && t.category === foundTour.category)
+          .slice(0, 3);
+        // If not enough from same category, add others
+        if (related.length < 3) {
+          const others = allTours
+            .filter(t => t.slug !== slug && !related.includes(t))
+            .slice(0, 3 - related.length);
+          related.push(...others);
         }
-      } catch (error) {
-        console.error('Error fetching tour:', error);
-      } finally {
-        setLoading(false);
+        setRelatedTours(related);
       }
+      
+      setLoading(false);
     };
 
-    fetchTour();
-  }, [slug]);
+    // Simulate slight loading for smoother UX
+    const timer = setTimeout(loadTour, 100);
+    return () => clearTimeout(timer);
+  }, [slug, allTours]);
 
   if (loading) {
     return (
@@ -114,13 +117,13 @@ const TourDetail = () => {
             {/* Image gallery */}
             <div className="relative rounded-2xl overflow-hidden mb-8">
               <img
-                src={tour.images?.[selectedImage] || '/placeholder.svg'}
+                src={tour.images[selectedImage] || tour.image || '/placeholder.svg'}
                 alt={tour.title}
                 className="w-full h-[300px] lg:h-[500px] object-cover"
               />
               
               {/* Image navigation */}
-              {tour.images && tour.images.length > 1 && (
+              {tour.images.length > 1 && (
                 <div className="absolute bottom-4 left-4 right-4 flex gap-2">
                   {tour.images.map((img, index) => (
                     <button
@@ -159,7 +162,7 @@ const TourDetail = () => {
                 <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                   {tour.category}
                 </span>
-                {tour.isFeatured && (
+                {tour.featured && (
                   <span className="bg-accent/10 text-accent px-3 py-1 rounded-full text-sm font-medium">
                     Featured
                   </span>
@@ -288,11 +291,11 @@ const TourDetail = () => {
                   <span className="text-sm text-muted-foreground">Starting from</span>
                   <div className="flex items-baseline gap-2 mt-1">
                     <span className="text-3xl font-bold text-primary">
-                      ₹{(tour.discountPrice || tour.price).toLocaleString()}
+                      ₹{tour.price.toLocaleString()}
                     </span>
-                    {tour.discountPrice && (
+                    {tour.originalPrice && (
                       <span className="text-lg text-muted-foreground line-through">
-                        ₹{tour.price.toLocaleString()}
+                        ₹{tour.originalPrice.toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -360,14 +363,14 @@ const TourDetail = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {relatedTours.map((relatedTour) => (
                 <Link
-                  key={relatedTour._id}
+                  key={relatedTour.id}
                   to={`/tours/${relatedTour.slug}`}
                   className="group"
                 >
                   <article className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
                     <div className="relative h-48 overflow-hidden">
                       <img
-                        src={relatedTour.images?.[0] || '/placeholder.svg'}
+                        src={relatedTour.images[0] || relatedTour.image || '/placeholder.svg'}
                         alt={relatedTour.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -378,7 +381,7 @@ const TourDetail = () => {
                       </h3>
                       <div className="flex items-center justify-between mt-3">
                         <span className="text-primary font-bold">
-                          ₹{(relatedTour.discountPrice || relatedTour.price).toLocaleString()}
+                        ₹{relatedTour.price.toLocaleString()}
                         </span>
                         <span className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Star className="w-4 h-4 text-accent fill-accent" />

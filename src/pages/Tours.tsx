@@ -5,14 +5,14 @@ import { MapPin, Clock, Star, ArrowRight, Grid, List, Search } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { mockApiService, USE_MOCK_API } from '@/lib/api/mock/mockApiService';
-import { toursService } from '@/lib/api/services/tours.service';
-import type { Tour } from '@/lib/api/types';
+import { useTours } from '@/contexts/ToursContext';
+import type { Tour } from '@/data/tours';
 
 type SortOption = 'popular' | 'price-low' | 'price-high' | 'rating' | 'duration';
 
 const Tours = () => {
-  const [tours, setTours] = useState<Tour[]>([]);
+  const { tours: contextTours } = useTours();
+  const [tours, setTours] = useState<Tour[]>(contextTours);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
@@ -20,22 +20,13 @@ const Tours = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const fetchTours = async () => {
-      try {
-        setLoading(true);
-        const api = USE_MOCK_API ? mockApiService.tours : toursService;
-        const data = await api.getAll();
-        // Only show active tours on public site
-        setTours(data.filter(t => t.isActive));
-      } catch (error) {
-        console.error('Error fetching tours:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTours();
-  }, []);
+    // Simulate loading for smoother UX
+    const timer = setTimeout(() => {
+      setTours(contextTours);
+      setLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [contextTours]);
 
   // Get unique categories from tours
   const categories = useMemo(() => {
@@ -213,7 +204,7 @@ const Tours = () => {
               )}>
                 {filteredTours.map((tour) => (
                   <Link
-                    key={tour._id}
+                    key={tour.id}
                     to={`/tours/${tour.slug}`}
                     className="group"
                   >
@@ -227,15 +218,15 @@ const Tours = () => {
                         viewMode === 'grid' ? "h-64" : "h-64 lg:h-auto lg:w-80 flex-shrink-0"
                       )}>
                         <img
-                          src={tour.images?.[0] || '/placeholder.svg'}
+                        src={tour.images[0] || tour.image || '/placeholder.svg'}
                           alt={tour.title}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
                         
-                        {tour.discountPrice && (
+                        {tour.originalPrice && (
                           <div className="absolute top-4 left-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-xs font-bold">
-                            {Math.round((1 - tour.discountPrice / tour.price) * 100)}% OFF
+                            {Math.round((1 - tour.price / tour.originalPrice) * 100)}% OFF
                           </div>
                         )}
                         
@@ -274,11 +265,11 @@ const Tours = () => {
                             <span className="text-xs text-muted-foreground">Starting from</span>
                             <div className="flex items-baseline gap-2">
                               <span className="text-xl font-bold text-primary">
-                                ₹{(tour.discountPrice || tour.price).toLocaleString()}
+                              ₹{tour.price.toLocaleString()}
                               </span>
-                              {tour.discountPrice && (
+                            {tour.originalPrice && (
                                 <span className="text-sm text-muted-foreground line-through">
-                                  ₹{tour.price.toLocaleString()}
+                                ₹{tour.originalPrice.toLocaleString()}
                                 </span>
                               )}
                             </div>
