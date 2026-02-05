@@ -112,6 +112,7 @@ export interface Tour {
   reviewCount: number;
   isActive: boolean;
   isFeatured: boolean;
+  maxGroupSize?: number;
   seo: {
     title: string;
     description: string;
@@ -144,6 +145,7 @@ export interface TourFormData {
   category: string;
   isActive: boolean;
   isFeatured: boolean;
+  maxGroupSize?: number;
   seo: {
     title: string;
     description: string;
