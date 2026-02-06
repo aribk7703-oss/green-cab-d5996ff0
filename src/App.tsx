@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Tours from "./pages/Tours";
 import TourDetail from "./pages/TourDetail";
 import Booking from "./pages/Booking";
+import BookingConfirmation from "./pages/BookingConfirmation";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Gallery from "./pages/Gallery";
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/tours" element={<Tours />} />
               <Route path="/tours/:slug" element={<TourDetail />} />
               <Route path="/booking/:slug" element={<Booking />} />
+              <Route path="/booking/confirmation" element={<BookingConfirmation />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/gallery" element={<Gallery />} />

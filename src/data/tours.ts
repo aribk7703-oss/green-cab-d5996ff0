@@ -1,3 +1,9 @@
+export interface TourDeparture {
+  date: string; // ISO date string (YYYY-MM-DD)
+  spotsAvailable: number;
+  price?: number; // Optional price override for this departure
+}
+
 export interface Tour {
   id: string;
   slug: string;
@@ -22,6 +28,7 @@ export interface Tour {
   popular: boolean;
   maxGroupSize: number;
   difficulty: 'Easy' | 'Moderate' | 'Challenging';
+  departures?: TourDeparture[];
 }
 
 export const tours: Tour[] = [
@@ -75,6 +82,14 @@ export const tours: Tour[] = [
     popular: true,
     maxGroupSize: 15,
     difficulty: 'Easy',
+    departures: [
+      { date: '2026-03-15', spotsAvailable: 8 },
+      { date: '2026-03-22', spotsAvailable: 12 },
+      { date: '2026-04-05', spotsAvailable: 15 },
+      { date: '2026-04-19', spotsAvailable: 6 },
+      { date: '2026-05-03', spotsAvailable: 10 },
+      { date: '2026-05-17', spotsAvailable: 14 },
+    ],
   },
   {
     id: '2',
@@ -130,6 +145,15 @@ export const tours: Tour[] = [
     popular: true,
     maxGroupSize: 12,
     difficulty: 'Moderate',
+    departures: [
+      { date: '2026-04-01', spotsAvailable: 4 },
+      { date: '2026-04-15', spotsAvailable: 10 },
+      { date: '2026-05-01', spotsAvailable: 12 },
+      { date: '2026-05-15', spotsAvailable: 8 },
+      { date: '2026-06-01', spotsAvailable: 11 },
+      { date: '2026-09-15', spotsAvailable: 12 },
+      { date: '2026-10-01', spotsAvailable: 7 },
+    ],
   },
   {
     id: '3',
@@ -187,6 +211,16 @@ export const tours: Tour[] = [
     popular: true,
     maxGroupSize: 16,
     difficulty: 'Easy',
+    departures: [
+      { date: '2026-02-15', spotsAvailable: 3 },
+      { date: '2026-03-01', spotsAvailable: 10 },
+      { date: '2026-03-15', spotsAvailable: 14 },
+      { date: '2026-04-01', spotsAvailable: 16 },
+      { date: '2026-10-15', spotsAvailable: 12 },
+      { date: '2026-11-01', spotsAvailable: 8 },
+      { date: '2026-11-15', spotsAvailable: 16 },
+      { date: '2026-12-20', spotsAvailable: 5 },
+    ],
   },
   {
     id: '4',
@@ -239,6 +273,14 @@ export const tours: Tour[] = [
     popular: true,
     maxGroupSize: 10,
     difficulty: 'Easy',
+    departures: [
+      { date: '2026-03-10', spotsAvailable: 6 },
+      { date: '2026-03-24', spotsAvailable: 10 },
+      { date: '2026-04-07', spotsAvailable: 8 },
+      { date: '2026-08-15', spotsAvailable: 10 },
+      { date: '2026-09-01', spotsAvailable: 7 },
+      { date: '2026-12-15', spotsAvailable: 4 },
+    ],
   },
   {
     id: '5',
@@ -295,6 +337,14 @@ export const tours: Tour[] = [
     popular: false,
     maxGroupSize: 8,
     difficulty: 'Challenging',
+    departures: [
+      { date: '2026-05-15', spotsAvailable: 4 },
+      { date: '2026-06-01', spotsAvailable: 8 },
+      { date: '2026-06-15', spotsAvailable: 6 },
+      { date: '2026-07-01', spotsAvailable: 8 },
+      { date: '2026-08-01', spotsAvailable: 5 },
+      { date: '2026-09-01', spotsAvailable: 7 },
+    ],
   },
   {
     id: '6',
@@ -346,6 +396,15 @@ export const tours: Tour[] = [
     popular: true,
     maxGroupSize: 20,
     difficulty: 'Easy',
+    departures: [
+      { date: '2026-02-14', spotsAvailable: 12 },
+      { date: '2026-02-28', spotsAvailable: 18 },
+      { date: '2026-03-14', spotsAvailable: 15 },
+      { date: '2026-11-01', spotsAvailable: 20 },
+      { date: '2026-12-01', spotsAvailable: 10 },
+      { date: '2026-12-24', spotsAvailable: 6 },
+      { date: '2026-12-31', spotsAvailable: 4 },
+    ],
   },
 ];
 

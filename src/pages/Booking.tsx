@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { getTourBySlug } from '@/data/tours';
+import { useTours } from '@/contexts/ToursContext';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Calendar, Users, CreditCard, Check, MapPin, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -9,13 +9,21 @@ import { toast } from 'sonner';
 
 const Booking = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const tour = getTourBySlug(slug || '');
+  const { tours } = useTours();
+  
+  // Find tour by slug from context
+  const tour = tours.find(t => t.slug === slug);
+  
+  // Get initial values from URL parameters
+  const initialDate = searchParams.get('date') || '';
+  const initialGuests = parseInt(searchParams.get('guests') || '1', 10);
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    travelers: 1,
-    date: '',
+    travelers: initialGuests,
+    date: initialDate,
     name: '',
     email: '',
     phone: '',
@@ -44,9 +52,16 @@ const Booking = () => {
     if (step < 3) {
       setStep(step + 1);
     } else {
-      // Simulate booking confirmation
-      toast.success('Booking request submitted! We will contact you shortly.');
-      navigate('/');
+      // Navigate to confirmation page with booking details
+      toast.success('Booking confirmed! Redirecting to confirmation...');
+      const confirmationParams = new URLSearchParams({
+        tour: tour.slug,
+        date: formData.date,
+        guests: formData.travelers.toString(),
+        name: formData.name,
+        email: formData.email,
+      });
+      navigate(`/booking/confirmation?${confirmationParams.toString()}`);
     }
   };
 

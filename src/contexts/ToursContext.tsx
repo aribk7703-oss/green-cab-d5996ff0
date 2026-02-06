@@ -16,7 +16,20 @@ export function ToursProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('admin_tours');
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const parsedTours = JSON.parse(stored) as Tour[];
+        // Merge stored tours with initial tours to get new properties (like departures)
+        return parsedTours.map(storedTour => {
+          const initialTour = initialTours.find(t => t.id === storedTour.id || t.slug === storedTour.slug);
+          if (initialTour) {
+            // Merge: keep stored tour data but add any new properties from initialTours
+            return {
+              ...initialTour, // base properties including new ones like departures
+              ...storedTour, // override with any user-modified properties
+              departures: initialTour.departures, // always use initial departures for now
+            };
+          }
+          return storedTour;
+        });
       } catch {
         return initialTours;
       }
