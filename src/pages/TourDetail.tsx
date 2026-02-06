@@ -326,6 +326,8 @@ const TourDetail = () => {
                   tourSlug={tour.slug}
                   tourPrice={tour.price}
                   tourTitle={tour.title}
+                  departures={tour.departures}
+                  maxGroupSize={tour.maxGroupSize}
                 />
 
                 <p className="text-center text-sm text-muted-foreground mt-4">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format, addDays, isBefore, startOfDay } from 'date-fns';
+import { format, parseISO, isSameDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,43 +7,157 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon, Users, Minus, Plus } from 'lucide-react';
+import { CalendarIcon, Users, Minus, Plus, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import type { TourDeparture } from '@/data/tours';
 
 interface TourAvailabilityCalendarProps {
   tourSlug: string;
   tourPrice: number;
   tourTitle: string;
+  departures?: TourDeparture[];
+  maxGroupSize?: number;
 }
 
-export function TourAvailabilityCalendar({ tourSlug, tourPrice, tourTitle }: TourAvailabilityCalendarProps) {
+export function TourAvailabilityCalendar({ 
+  tourSlug, 
+  tourPrice, 
+  tourTitle,
+  departures = [],
+  maxGroupSize = 20
+}: TourAvailabilityCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [guests, setGuests] = useState(2);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
-  const today = startOfDay(new Date());
-  const minDate = addDays(today, 1); // Minimum 1 day in advance
-  const maxDate = addDays(today, 365); // Maximum 1 year in advance
+  // Parse departure dates for availability checking
+  const availableDates = departures.map(d => parseISO(d.date));
+  
+  // Get selected departure details
+  const selectedDeparture = selectedDate 
+    ? departures.find(d => isSameDay(parseISO(d.date), selectedDate))
+    : undefined;
+
+  // Max guests is limited by spots available for the selected departure
+  const maxGuests = selectedDeparture 
+    ? Math.min(selectedDeparture.spotsAvailable, maxGroupSize)
+    : maxGroupSize;
 
   const handleGuestChange = (delta: number) => {
-    setGuests(prev => Math.min(Math.max(1, prev + delta), 20));
+    setGuests(prev => Math.min(Math.max(1, prev + delta), maxGuests));
   };
 
-  const totalPrice = tourPrice * guests;
+  // Reset guests if they exceed available spots when date changes
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      const departure = departures.find(d => isSameDay(parseISO(d.date), date));
+      if (departure && guests > departure.spotsAvailable) {
+        setGuests(departure.spotsAvailable);
+      }
+    }
+    setIsCalendarOpen(false);
+  };
 
-  // Disable past dates and dates more than a year out
+  // Use departure-specific price or default tour price
+  const effectivePrice = selectedDeparture?.price ?? tourPrice;
+  const totalPrice = effectivePrice * guests;
+
+  // Only enable dates that have departures
   const disabledDays = (date: Date) => {
-    return isBefore(date, minDate) || isBefore(maxDate, date);
+    return !availableDates.some(availableDate => isSameDay(date, availableDate));
   };
+
+  // Custom day content to show availability
+  const modifiers = {
+    available: availableDates,
+    lowAvailability: departures
+      .filter(d => d.spotsAvailable <= 3)
+      .map(d => parseISO(d.date)),
+  };
+
+  const modifiersStyles = {
+    available: {
+      fontWeight: '600' as const,
+      backgroundColor: 'hsl(var(--primary) / 0.1)',
+      borderRadius: '50%',
+    },
+    lowAvailability: {
+      backgroundColor: 'hsl(var(--destructive) / 0.15)',
+      color: 'hsl(var(--destructive))',
+      fontWeight: '700' as const,
+      borderRadius: '50%',
+    },
+  };
+
+  // If no departures available
+  if (departures.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 p-4 rounded-lg bg-muted/50 border border-border text-muted-foreground">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <p className="text-sm">No departures currently scheduled. Contact us for custom dates.</p>
+        </div>
+        <Button variant="outline" size="lg" className="w-full" asChild>
+          <Link to="/contact">Enquire About This Tour</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Date Picker */}
+      {/* Upcoming Departures List */}
       <div>
         <label className="text-sm font-medium text-muted-foreground mb-2 block">
-          Select Travel Date
+          Available Departures
         </label>
+        <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+          {departures.slice(0, 4).map((departure) => {
+            const date = parseISO(departure.date);
+            const isSelected = selectedDate && isSameDay(date, selectedDate);
+            const isLowAvailability = departure.spotsAvailable <= 3;
+            
+            return (
+              <button
+                key={departure.date}
+                type="button"
+                onClick={() => handleDateSelect(date)}
+                className={cn(
+                  "w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left",
+                  isSelected 
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                )}
+              >
+                <div>
+                  <p className="font-medium text-sm">
+                    {format(date, 'EEEE, MMM d, yyyy')}
+                  </p>
+                  <p className={cn(
+                    "text-xs",
+                    isLowAvailability ? "text-destructive font-medium" : "text-muted-foreground"
+                  )}>
+                    {isLowAvailability 
+                      ? `Only ${departure.spotsAvailable} spots left!`
+                      : `${departure.spotsAvailable} spots available`
+                    }
+                  </p>
+                </div>
+                {departure.price && departure.price !== tourPrice && (
+                  <span className="text-sm font-semibold text-primary">
+                    ₹{departure.price.toLocaleString()}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Date Picker for more dates */}
+      <div>
         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -54,21 +168,30 @@ export function TourAvailabilityCalendar({ tourSlug, tourPrice, tourTitle }: Tou
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+              {selectedDate ? format(selectedDate, "PPP") : "View all departure dates"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={(date) => {
-                setSelectedDate(date);
-                setIsCalendarOpen(false);
-              }}
+              onSelect={handleDateSelect}
               disabled={disabledDays}
+              modifiers={modifiers}
+              modifiersStyles={modifiersStyles}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
             />
+            <div className="px-3 pb-3 flex items-center gap-4 text-xs text-muted-foreground border-t border-border pt-2">
+              <div className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-primary/20"></span>
+                <span>Available</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-destructive/20"></span>
+                <span>Low availability</span>
+              </div>
+            </div>
           </PopoverContent>
         </Popover>
       </div>
@@ -99,12 +222,17 @@ export function TourAvailabilityCalendar({ tourSlug, tourPrice, tourTitle }: Tou
               size="icon"
               className="h-8 w-8"
               onClick={() => handleGuestChange(1)}
-              disabled={guests >= 20}
+              disabled={guests >= maxGuests}
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
+        {selectedDeparture && guests >= selectedDeparture.spotsAvailable && (
+          <p className="text-xs text-destructive mt-1">
+            Maximum spots available for this departure
+          </p>
+        )}
       </div>
 
       {/* Price Summary */}
@@ -112,7 +240,7 @@ export function TourAvailabilityCalendar({ tourSlug, tourPrice, tourTitle }: Tou
         <div className="p-4 rounded-lg bg-muted/50 border border-border space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
-              ₹{tourPrice.toLocaleString()} × {guests} guests
+              ₹{effectivePrice.toLocaleString()} × {guests} guests
             </span>
             <span>₹{totalPrice.toLocaleString()}</span>
           </div>
@@ -140,7 +268,7 @@ export function TourAvailabilityCalendar({ tourSlug, tourPrice, tourTitle }: Tou
         <Link
           to={selectedDate ? `/booking/${tourSlug}?date=${format(selectedDate, 'yyyy-MM-dd')}&guests=${guests}` : '#'}
         >
-          {selectedDate ? 'Reserve Now' : 'Select a Date to Continue'}
+          {selectedDate ? 'Reserve Now' : 'Select a Departure Date'}
         </Link>
       </Button>
 
