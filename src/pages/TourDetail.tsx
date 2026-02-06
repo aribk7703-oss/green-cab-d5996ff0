@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useTours } from '@/contexts/ToursContext';
 import type { Tour } from '@/data/tours';
+import { TourAvailabilityCalendar } from '@/components/tour/TourAvailabilityCalendar';
 
 const TourDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -302,7 +303,7 @@ const TourDetail = () => {
                   <span className="text-sm text-muted-foreground">per person</span>
                 </div>
 
-                <div className="space-y-4 mb-6">
+                <div className="space-y-4 mb-6 pb-6 border-b border-border">
                   <div className="flex items-center justify-between py-3 border-b border-border">
                     <span className="text-muted-foreground">Duration</span>
                     <span className="font-medium">{tour.duration}</span>
@@ -311,7 +312,7 @@ const TourDetail = () => {
                     <span className="text-muted-foreground">Category</span>
                     <span className="font-medium">{tour.category}</span>
                   </div>
-                  <div className="flex items-center justify-between py-3 border-b border-border">
+                  <div className="flex items-center justify-between py-3">
                     <span className="text-muted-foreground">Rating</span>
                     <span className="font-medium flex items-center gap-1">
                       <Star className="w-4 h-4 text-accent fill-accent" />
@@ -320,17 +321,12 @@ const TourDetail = () => {
                   </div>
                 </div>
 
-                <Button variant="accent" size="lg" className="w-full mb-3" asChild>
-                  <Link to={`/booking/${tour.slug}`}>
-                    Book This Tour
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
-
-                <Button variant="outline" size="lg" className="w-full">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Check Availability
-                </Button>
+                {/* Availability Calendar */}
+                <TourAvailabilityCalendar 
+                  tourSlug={tour.slug}
+                  tourPrice={tour.price}
+                  tourTitle={tour.title}
+                />
 
                 <p className="text-center text-sm text-muted-foreground mt-4">
                   Free cancellation up to 7 days before

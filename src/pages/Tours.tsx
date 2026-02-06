@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { MapPin, Clock, Star, ArrowRight, Grid, List, Search } from 'lucide-react';
+import { MapPin, Clock, Star, ArrowRight, Grid, List, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { useTours } from '@/contexts/ToursContext';
 import type { Tour } from '@/data/tours';
 
 type SortOption = 'popular' | 'price-low' | 'price-high' | 'rating' | 'duration';
+const TOURS_PER_PAGE = 6;
 
 const Tours = () => {
   const { tours: contextTours } = useTours();
@@ -18,6 +19,7 @@ const Tours = () => {
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     // Simulate loading for smoother UX
@@ -80,6 +82,18 @@ const Tours = () => {
 
     return result;
   }, [tours, selectedCategory, sortBy, searchQuery]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredTours.length / TOURS_PER_PAGE);
+  const paginatedTours = useMemo(() => {
+    const startIndex = (currentPage - 1) * TOURS_PER_PAGE;
+    return filteredTours.slice(startIndex, startIndex + TOURS_PER_PAGE);
+  }, [filteredTours, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, sortBy, searchQuery]);
 
   return (
     <MainLayout>
@@ -193,7 +207,8 @@ const Tours = () => {
 
               {/* Results count */}
               <p className="text-muted-foreground mb-6">
-                Showing {filteredTours.length} {filteredTours.length === 1 ? 'tour' : 'tours'}
+                Showing {paginatedTours.length} of {filteredTours.length} {filteredTours.length === 1 ? 'tour' : 'tours'}
+                {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
               </p>
 
               {/* Tours grid/list */}
@@ -202,7 +217,7 @@ const Tours = () => {
                   ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
                   : "flex flex-col gap-6"
               )}>
-                {filteredTours.map((tour) => (
+                {paginatedTours.map((tour) => (
                   <Link
                     key={tour.id}
                     to={`/tours/${tour.slug}`}
@@ -284,6 +299,43 @@ const Tours = () => {
                   </Link>
                 ))}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-12">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="icon"
+                      onClick={() => setCurrentPage(page)}
+                      className={cn(
+                        currentPage === page && "bg-primary text-primary-foreground"
+                      )}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                  
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
 
               {/* Empty state */}
               {filteredTours.length === 0 && (
