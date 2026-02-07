@@ -23,9 +23,8 @@ export function ToursProvider({ children }: { children: ReactNode }) {
           if (initialTour) {
             // Merge: keep stored tour data but add any new properties from initialTours
             return {
-              ...initialTour, // base properties including new ones like departures
-              ...storedTour, // override with any user-modified properties
-              departures: initialTour.departures, // always use initial departures for now
+              ...initialTour, // base properties including new ones
+              ...storedTour, // override with any user-modified properties (including departures)
             };
           }
           return storedTour;
