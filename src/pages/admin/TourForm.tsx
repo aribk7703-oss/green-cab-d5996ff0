@@ -12,8 +12,9 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Plus, Trash2, Loader2, X } from 'lucide-react';
 import { MultiImageUpload } from '@/components/admin/MultiImageUpload';
 import { toast } from 'sonner';
-import { Tour } from '@/data/tours';
+import { Tour, TourDeparture } from '@/data/tours';
 import { USE_MOCK_API } from '@/lib/api/mock';
+import { DepartureManager } from '@/components/admin/DepartureManager';
 
 const categories = ['Adventure', 'Beach', 'Cultural', 'Nature', 'Wildlife', 'Honeymoon', 'Family', 'Pilgrimage', 'Heritage'];
 
@@ -40,6 +41,7 @@ interface TourFormData {
   exclusions: string[];
   maxGroupSize: number;
   difficulty: 'Easy' | 'Moderate' | 'Challenging';
+  departures: TourDeparture[];
 }
 
 const defaultFormData: TourFormData = {
@@ -65,6 +67,7 @@ const defaultFormData: TourFormData = {
   exclusions: [''],
   maxGroupSize: 15,
   difficulty: 'Easy',
+  departures: [],
 };
 
 // Simulate network delay for mock mode
@@ -117,6 +120,7 @@ export default function TourForm() {
             exclusions: tour.exclusions?.length ? tour.exclusions : [''],
             maxGroupSize: tour.maxGroupSize || 15,
             difficulty: tour.difficulty || 'Easy',
+            departures: tour.departures || [],
           });
         } else {
           toast.error('Tour not found');
@@ -255,6 +259,7 @@ export default function TourForm() {
       itinerary: formData.itinerary.filter(i => i.title.trim()),
       maxGroupSize: formData.maxGroupSize,
       difficulty: formData.difficulty,
+      departures: formData.departures,
     };
 
     try {
@@ -409,6 +414,13 @@ export default function TourForm() {
                 />
               </CardContent>
             </Card>
+
+            {/* Departure Dates */}
+            <DepartureManager
+              departures={formData.departures}
+              onChange={(departures) => setFormData(prev => ({ ...prev, departures }))}
+              defaultPrice={formData.price}
+            />
 
             {/* Itinerary */}
             <Card className="shadow-sm">
