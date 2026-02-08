@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { MapPin, Clock, Star, ArrowRight, Grid, List, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, Star, ArrowRight, Grid, List, Search, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useTours } from '@/contexts/ToursContext';
+import { getNextDeparture, formatDepartureDate } from '@/lib/utils/tours';
 import type { Tour } from '@/data/tours';
 
 type SortOption = 'popular' | 'price-low' | 'price-high' | 'rating' | 'duration';
@@ -275,25 +276,38 @@ const Tours = () => {
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
-                          <div>
-                            <span className="text-xs text-muted-foreground">Starting from</span>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-xl font-bold text-primary">
-                              ₹{tour.price.toLocaleString()}
-                              </span>
-                            {tour.originalPrice && (
-                                <span className="text-sm text-muted-foreground line-through">
-                                ₹{tour.originalPrice.toLocaleString()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="sm" className="gap-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                            View Details
-                            <ArrowRight className="w-4 h-4" />
-                          </Button>
-                        </div>
+                        <div className="space-y-4">
+                           {/* Next departure indicator */}
+                           {getNextDeparture(tour) && (
+                             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20">
+                               <Calendar className="w-3.5 h-3.5 text-accent" />
+                               <span className="text-xs font-medium text-accent">
+                                 Next: {formatDepartureDate(getNextDeparture(tour)!)}
+                               </span>
+                             </div>
+                           )}
+
+                           {/* Price section */}
+                           <div className="flex items-center justify-between pt-4 border-t border-border">
+                             <div>
+                               <span className="text-xs text-muted-foreground">Starting from</span>
+                               <div className="flex items-baseline gap-2">
+                                 <span className="text-xl font-bold text-primary">
+                                 ₹{tour.price.toLocaleString()}
+                                 </span>
+                               {tour.originalPrice && (
+                                   <span className="text-sm text-muted-foreground line-through">
+                                   ₹{tour.originalPrice.toLocaleString()}
+                                   </span>
+                                 )}
+                               </div>
+                             </div>
+                             <Button variant="ghost" size="sm" className="gap-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                               View Details
+                               <ArrowRight className="w-4 h-4" />
+                             </Button>
+                           </div>
+                         </div>
                       </div>
                     </article>
                   </Link>

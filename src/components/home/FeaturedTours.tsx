@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Star, ArrowRight } from 'lucide-react';
+import { MapPin, Clock, Star, ArrowRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { mockApiService, USE_MOCK_API } from '@/lib/api/mock/mockApiService';
 import { toursService } from '@/lib/api/services/tours.service';
+import { getNextDeparture, formatDepartureDate } from '@/lib/utils/tours';
 import type { Tour } from '@/lib/api/types';
 
 export function FeaturedTours() {
@@ -134,25 +135,38 @@ export function FeaturedTours() {
                       </span>
                     </div>
 
-                    {/* Price */}
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
-                      <div>
-                        <span className="text-xs text-muted-foreground">Starting from</span>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-xl font-bold text-primary">
-                            ₹{(tour.discountPrice || tour.price).toLocaleString()}
-                          </span>
-                          {tour.discountPrice && (
-                            <span className="text-sm text-muted-foreground line-through">
-                              ₹{tour.price.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="icon" className="rounded-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        <ArrowRight className="w-5 h-5" />
-                      </Button>
-                    </div>
+                    {/* Next departure indicator & Price */}
+                     <div className="space-y-4">
+                       {/* Next departure indicator */}
+                       {getNextDeparture(tour as any) && (
+                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20">
+                           <Calendar className="w-3.5 h-3.5 text-accent" />
+                           <span className="text-xs font-medium text-accent">
+                             Next: {formatDepartureDate(getNextDeparture(tour as any)!)}
+                           </span>
+                         </div>
+                       )}
+
+                       {/* Price */}
+                       <div className="flex items-center justify-between pt-4 border-t border-border">
+                         <div>
+                           <span className="text-xs text-muted-foreground">Starting from</span>
+                           <div className="flex items-baseline gap-2">
+                             <span className="text-xl font-bold text-primary">
+                               ₹{(tour.discountPrice || tour.price).toLocaleString()}
+                             </span>
+                             {tour.discountPrice && (
+                               <span className="text-sm text-muted-foreground line-through">
+                                 ₹{tour.price.toLocaleString()}
+                               </span>
+                             )}
+                           </div>
+                         </div>
+                         <Button variant="ghost" size="icon" className="rounded-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                           <ArrowRight className="w-5 h-5" />
+                         </Button>
+                       </div>
+                     </div>
                   </div>
                 </article>
               </Link>
