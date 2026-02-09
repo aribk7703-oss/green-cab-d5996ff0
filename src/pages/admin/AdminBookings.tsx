@@ -1,8 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { 
   Select, 
   SelectContent, 
@@ -27,15 +34,20 @@ import {
   Eye, 
   RefreshCw, 
   Loader2, 
-  Calendar,
+  Calendar as CalendarIcon,
   Phone,
   MapPin,
   Users,
   Car,
   MessageSquare,
-  Clock
+  Clock,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 // Mock data for demo when backend is not connected
 const mockBookings: Booking[] = [
@@ -121,6 +133,23 @@ const mockBookings: Booking[] = [
     createdAt: '2024-01-10T20:30:00Z',
     updatedAt: '2024-01-10T20:30:00Z'
   },
+  { 
+    _id: '6', 
+    customerName: 'Priya Sharma', 
+    phone: '+91 9876543215',
+    email: 'priya@example.com',
+    serviceType: 'tour',
+    serviceName: 'Rajasthan Royal Heritage', 
+    pickupLocation: 'Mumbai Airport',
+    date: '2024-02-20', 
+    vehicleType: 'SUV',
+    passengers: 4,
+    status: 'CANCELLED',
+    source: 'WEBSITE',
+    notes: 'Cancelled due to schedule conflict',
+    createdAt: '2024-01-05T09:00:00Z',
+    updatedAt: '2024-01-07T11:00:00Z'
+  },
 ];
 
 const statusOptions: BookingStatus[] = ['NEW', 'CONTACTED', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
@@ -156,6 +185,110 @@ function SourceBadge({ source }: { source: string }) {
   );
 }
 
+interface DateRangePickerProps {
+  startDate: Date | undefined;
+  endDate: Date | undefined;
+  onStartChange: (date: Date | undefined) => void;
+  onEndChange: (date: Date | undefined) => void;
+}
+
+function DateRangePicker({ startDate, endDate, onStartChange, onEndChange }: DateRangePickerProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-[130px] justify-start text-left font-normal",
+              !startDate && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {startDate ? format(startDate, "MMM d, yyyy") : "Start date"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={startDate}
+            onSelect={onStartChange}
+            initialFocus
+            className="pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+      <span className="text-muted-foreground">to</span>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-[130px] justify-start text-left font-normal",
+              !endDate && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {endDate ? format(endDate, "MMM d, yyyy") : "End date"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={endDate}
+            onSelect={onEndChange}
+            disabled={(date) => startDate ? date < startDate : false}
+            initialFocus
+            className="pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+      {(startDate || endDate) && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            onStartChange(undefined);
+            onEndChange(undefined);
+          }}
+          className="text-muted-foreground"
+        >
+          Clear
+        </Button>
+      )}
+    </div>
+  );
+}
+
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  trend?: string;
+  className?: string;
+}
+
+function StatCard({ title, value, icon, trend, className }: StatCardProps) {
+  return (
+    <Card className={className}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold">{value}</p>
+            {trend && (
+              <p className="text-xs text-muted-foreground mt-1">{trend}</p>
+            )}
+          </div>
+          <div className="rounded-full p-2 bg-muted">
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>(mockBookings);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,6 +296,8 @@ export default function AdminBookings() {
     status: undefined,
     search: '',
   });
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -204,6 +339,44 @@ export default function AdminBookings() {
   useEffect(() => {
     fetchBookings();
   }, [fetchBookings]);
+
+  // Apply date range filter on client side
+  const filteredBookings = useMemo(() => {
+    if (!startDate && !endDate) return bookings;
+    
+    return bookings.filter(booking => {
+      const bookingDate = parseISO(booking.date);
+      
+      if (startDate && endDate) {
+        return isWithinInterval(bookingDate, {
+          start: startOfDay(startDate),
+          end: endOfDay(endDate)
+        });
+      }
+      
+      if (startDate) {
+        return bookingDate >= startOfDay(startDate);
+      }
+      
+      if (endDate) {
+        return bookingDate <= endOfDay(endDate);
+      }
+      
+      return true;
+    });
+  }, [bookings, startDate, endDate]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const all = filteredBookings;
+    return {
+      total: all.length,
+      new: all.filter(b => b.status === 'NEW').length,
+      confirmed: all.filter(b => b.status === 'CONFIRMED').length,
+      completed: all.filter(b => b.status === 'COMPLETED').length,
+      cancelled: all.filter(b => b.status === 'CANCELLED').length,
+    };
+  }, [filteredBookings]);
 
   const handleStatusUpdate = async (bookingId: string, newStatus: BookingStatus) => {
     setIsUpdating(true);
@@ -256,6 +429,37 @@ export default function AdminBookings() {
           </Button>
         </div>
 
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <StatCard
+            title="Total Bookings"
+            value={stats.total}
+            icon={<TrendingUp className="h-5 w-5 text-primary" />}
+          />
+          <StatCard
+            title="New Leads"
+            value={stats.new}
+            icon={<AlertCircle className="h-5 w-5 text-amber-500" />}
+            trend="Requires attention"
+          />
+          <StatCard
+            title="Confirmed"
+            value={stats.confirmed}
+            icon={<CheckCircle className="h-5 w-5 text-primary" />}
+          />
+          <StatCard
+            title="Completed"
+            value={stats.completed}
+            icon={<CheckCircle className="h-5 w-5 text-muted-foreground" />}
+          />
+          <StatCard
+            title="Cancelled"
+            value={stats.cancelled}
+            icon={<XCircle className="h-5 w-5 text-destructive" />}
+          />
+        </div>
+
+        {/* Filters */}
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4">
@@ -286,15 +490,22 @@ export default function AdminBookings() {
                   ))}
                 </SelectContent>
               </Select>
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartChange={setStartDate}
+                onEndChange={setEndDate}
+              />
             </div>
           </CardContent>
         </Card>
 
+        {/* Bookings Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              All Bookings ({bookings.length})
+              <CalendarIcon className="h-5 w-5 text-primary" />
+              All Bookings ({filteredBookings.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -323,14 +534,14 @@ export default function AdminBookings() {
                         ))}
                       </tr>
                     ))
-                  ) : bookings.length === 0 ? (
+                  ) : filteredBookings.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-muted-foreground">
                         No bookings found
                       </td>
                     </tr>
                   ) : (
-                    bookings.map((booking) => (
+                    filteredBookings.map((booking) => (
                       <tr key={booking._id} className="border-b last:border-0 hover:bg-muted/50">
                         <td className="py-3">
                           <div className="text-sm font-medium">{booking.customerName}</div>
@@ -380,6 +591,7 @@ export default function AdminBookings() {
           </CardContent>
         </Card>
 
+        {/* Booking Details Dialog */}
         <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -428,7 +640,7 @@ export default function AdminBookings() {
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                      <CalendarIcon className="h-4 w-4 mt-0.5 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">{formatDate(selectedBooking.date)}</p>
                         <p className="text-xs text-muted-foreground">Booking Date</p>

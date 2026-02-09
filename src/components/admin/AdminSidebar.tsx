@@ -15,7 +15,8 @@ import {
   MapPin,
   FileText,
   Newspaper,
-  ImageIcon
+  ImageIcon,
+  Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
       { label: 'Add New Tour', href: '/admin/tours/create' },
     ]
   },
+  { icon: Package, label: 'Inventory', href: '/admin/inventory' },
   { icon: MapPin, label: 'Locations', href: '/admin/locations' },
   { icon: Newspaper, label: 'Blog', href: '/admin/blog' },
   { icon: FileText, label: 'Pages', href: '/admin/pages' },
