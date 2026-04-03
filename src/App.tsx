@@ -22,6 +22,7 @@ import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
 import Destinations from "./pages/Destinations";
 import DestinationDetail from "./pages/DestinationDetail";
+import ProfileSettings from "./pages/ProfileSettings";
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="/services/:slug" element={<ServiceDetail />} />
               <Route path="/destinations" element={<Destinations />} />
               <Route path="/destinations/:slug" element={<DestinationDetail />} />
+              <Route path="/profile" element={<ProfileSettings />} />
               
               {/* Static Pages from CMS */}
               <Route path="/terms" element={<DynamicPage slug="terms" />} />
