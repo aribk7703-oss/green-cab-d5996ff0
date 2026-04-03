@@ -13,7 +13,7 @@ export function getNextDeparture(tour: Tour) {
   const nextDeparture = tour.departures
     .filter(d => new Date(d.date) >= now)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .at(0);
+    [0] ?? null;
 
   return nextDeparture ? nextDeparture.date : null;
 }
