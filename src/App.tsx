@@ -22,6 +22,7 @@ import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
 import Destinations from "./pages/Destinations";
 import DestinationDetail from "./pages/DestinationDetail";
+import ProfileSettings from "./pages/ProfileSettings";
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
